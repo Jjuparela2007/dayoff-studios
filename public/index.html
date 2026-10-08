@@ -186,17 +186,23 @@
 
     <!-- ═══════════ ESTUDIO ═══════════ -->
     <section class="about" id="studio">
-      <div class="about__img" data-parallax><img alt="" loading="lazy"></div>
-      <div class="about__body">
-        <header class="section-head">
-          <span class="mono section-head__num">04</span>
-          <h2 class="section-title" data-setting="about_title" data-reveal></h2>
-        </header>
-        <div class="about__text" data-setting="about_text" data-multiline data-reveal-lines></div>
-        <div class="stats">
-          <div><b data-setting="stat_1_value" data-count></b><span data-setting="stat_1_label"></span></div>
-          <div><b data-setting="stat_2_value" data-count></b><span data-setting="stat_2_label"></span></div>
-          <div><b data-setting="stat_3_value" data-count></b><span data-setting="stat_3_label"></span></div>
+      <!-- Escena "The studio": la foto se ve a través de las letras del título; al hacer scroll las letras
+           crecen, la máscara se abre a pantalla completa y la foto sube mientras entra el texto (site.js) -->
+      <div class="about__stage">
+        <div class="about__photo"><img alt="DayOff Studios team on set" loading="lazy"></div>
+        <div class="about__mask" aria-hidden="true"><span class="about__mask-text" data-setting="about_title"></span></div>
+        <div class="about__shade" aria-hidden="true"></div>
+        <div class="about__content">
+          <header class="section-head">
+            <span class="mono section-head__num">04</span>
+            <h2 class="section-title about__title" data-setting="about_title"></h2>
+          </header>
+          <div class="about__text" data-setting="about_text" data-multiline></div>
+          <div class="stats">
+            <div><b data-setting="stat_1_value" data-count></b><span data-setting="stat_1_label"></span></div>
+            <div><b data-setting="stat_2_value" data-count></b><span data-setting="stat_2_label"></span></div>
+            <div><b data-setting="stat_3_value" data-count></b><span data-setting="stat_3_label"></span></div>
+          </div>
         </div>
       </div>
 

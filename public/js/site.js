@@ -400,7 +400,7 @@
 
     // Imagen de "Estudio"
     const aboutImg = safeUrl(s.about_image_url) || safeUrl(state.projects[1]?.backdrop_url) || image;
-    $('.about__img img').src = aboutImg;
+    $('.about__photo img').src = aboutImg;
 
     // Marquesina: eslogan + categorías
     const sun = '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>';
@@ -748,7 +748,7 @@
   }
 
   function scrollAnimations() {
-    if (!ANIM || !ST) return;
+    if (!ANIM || !ST) { $('.about')?.classList.add('is-static'); return; }   // sin animaciones: foto completa con el texto encima
 
     // Hero: parallax del fondo y fundido del contenido al bajar
     gsap.to('.hero__media', { yPercent: 18, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
@@ -763,14 +763,44 @@
     // Lista de categorías: líneas que se dibujan + entrada escalonada
     gsap.from('.cat-item', { opacity: 0, y: 50, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.cat-list', start: 'top 80%' } });
 
-    // Estudio: parallax de imagen, reveal de párrafos, contadores
-    $$('[data-parallax] img').forEach((img) => gsap.fromTo(img, { yPercent: -12 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: img.parentElement, scrub: true } }));
-    gsap.from('.about__img', { clipPath: 'inset(100% 0 0 0)', duration: 1.6, ease: 'power4.inOut', scrollTrigger: { trigger: '.about', start: 'top 70%' } });
-    gsap.from('[data-reveal-lines] p', { opacity: 0, y: 30, duration: 1, stagger: .15, scrollTrigger: { trigger: '.about__text', start: 'top 80%' } });
-    $$('[data-count]').forEach((el) => {
-      const target = parseFloat(el.textContent) || 0;
+    // ESTUDIO — la foto a través de las letras.
+    // Escritorio: la escena se fija; al bajar, la foto sube dentro de las letras, las letras crecen hasta
+    // abrir la máscara a pantalla completa y entran el texto y las cifras sobre la foto.
+    // Móvil: misma idea sin fijar (la máscara se abre mientras pasa la escena) y el texto va debajo.
+    const countUp = (els) => els.forEach((el) => {
+      if (el.dataset.counted) return;
+      el.dataset.counted = '1';
+      const target = parseFloat(el.dataset.target ?? el.textContent) || 0;
+      el.dataset.target = target;
       const obj = { v: 0 };
-      gsap.to(obj, { v: target, duration: 2, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 90%' }, onUpdate: () => { el.textContent = Math.round(obj.v); } });
+      gsap.to(obj, { v: target, duration: 2, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(obj.v); } });
+    });
+    $$('.about [data-count]').forEach((el) => { el.dataset.target = parseFloat(el.textContent) || 0; });
+    // Las letras entran desde abajo cuando la escena aparece
+    gsap.from('.about__mask-text', { yPercent: 40, opacity: 0, duration: 1.4, ease: 'power4.out', scrollTrigger: { trigger: '.about__stage', start: 'top 75%' } });
+    ST.matchMedia({
+      '(min-width: 861px)': () => {
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: '.about__stage', start: 'top top', end: '+=170%', pin: true, scrub: 1, anticipatePin: 1 }
+        });
+        tl.fromTo('.about__photo img', { yPercent: 0, scale: 1.08 }, { yPercent: -22, scale: 1, duration: 1 }, 0)        // la foto "sube"
+          .to('.about__mask-text', { scale: 5.5, letterSpacing: '.02em', duration: .5, ease: 'power2.in' }, .18)         // las letras crecen…
+          .to('.about__mask', { opacity: 0, duration: .26, ease: 'power1.in' }, .4)                                   // …y la máscara se abre
+          .to('.about__shade', { opacity: 1, duration: .25 }, .58)
+          .fromTo('.about__content', { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: .22, ease: 'power3.out' }, .66)
+          .from('.about__text p, .about .stats > div', { opacity: 0, y: 30, duration: .18, stagger: .04, ease: 'power2.out' }, .72)
+          .call(() => countUp($$('.about [data-count]')), null, .78)
+          .to({}, { duration: .12 });                                                                                  // pausa final para leer
+      },
+      '(max-width: 860px)': () => {
+        const st = { trigger: '.about__stage', start: 'top 30%', end: 'top -45%', scrub: true };
+        gsap.fromTo('.about__photo img', { yPercent: 0 }, { yPercent: -18, ease: 'none', scrollTrigger: { trigger: '.about__stage', start: 'top bottom', end: 'bottom top', scrub: true } });
+        gsap.to('.about__mask-text', { scale: 4, ease: 'power2.in', scrollTrigger: st });
+        gsap.to('.about__mask', { opacity: 0, ease: 'power1.in', scrollTrigger: { ...st, start: 'top 5%' } });
+        gsap.from('.about__text p, .about .stats > div', { opacity: 0, y: 30, duration: 1, stagger: .12, ease: 'power3.out',
+          scrollTrigger: { trigger: '.about__content', start: 'top 85%', onEnter: () => countUp($$('.about [data-count]')) } });
+      }
     });
 
     // ESTRENO — escena principal.
@@ -1428,6 +1458,9 @@
     scrollAnimations();
     // Recalcula posiciones cuando terminan de cargar imágenes/fuentes (evita saltos y zonas vacías)
     if (ST) {
+      // Las escenas fijadas (estreno, destacados, estudio) se crean en distinto orden que en la página:
+      // se ordenan por posición antes de recalcular, para que cada una sume el espacio de las anteriores
+      ST.sort();
       ST.refresh();
       if (document.readyState !== 'complete') addEventListener('load', () => ST.refresh(), { once: true });
     }
