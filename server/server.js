@@ -54,7 +54,17 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada'
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '30d', immutable: true }));
 // En desarrollo, sin caché: así cada cambio en HTML/CSS/JS se ve al recargar.
 const PROD = process.env.NODE_ENV === 'production';
-const staticOpts = { extensions: ['html'], maxAge: PROD ? '1h' : 0, etag: true };
+// Caché de archivos del sitio:
+//  · HTML, JS y CSS → "no-cache": el navegador pregunta siempre si cambió (respuesta 304 instantánea si no).
+//    Así una actualización publicada se ve con un F5 normal, sin Ctrl+F5.
+//  · Imágenes, videos y fuentes (pesados y casi nunca cambian) → 1 día en producción.
+const staticOpts = {
+  extensions: ['html'], etag: true, lastModified: true,
+  setHeaders(res, file) {
+    if (!PROD || /\.(html|js|css|json|txt|map)$/i.test(file)) res.setHeader('Cache-Control', 'no-cache');
+    else res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+};
 app.use(express.static(path.join(ROOT, 'public'), staticOpts));
 
 /* Ficha de proyecto con URL propia: /project/my-film (también acepta la ruta antigua /proyecto/) → misma página, el JS abre la ficha */

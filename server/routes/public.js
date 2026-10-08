@@ -6,6 +6,10 @@
  *   GET /api/founder         → perfil del fundador + su filmografía (página /director/...)
  */
 const router = require('express').Router();
+
+// Todo el contenido de la API se pide fresco en cada visita (con ETag: si no cambió, el servidor responde
+// "304 sin cambios" en milisegundos y no se vuelve a descargar)
+router.use((req, res, next) => { res.set('Cache-Control', 'no-cache'); next(); });
 const { query } = require('../db');
 const { asyncH } = require('../utils');
 // Textos de ejemplo del fundador: se usan si la base de datos todavía no los tiene (sin necesidad de db:update)
@@ -47,7 +51,7 @@ router.get('/site', asyncH(async (req, res) => {
         WHERE cr.project_id = ? ORDER BY cr.department, cr.sort_order, cr.id`, [spotlight.id]);
   }
 
-  res.set('Cache-Control', 'public, max-age=60');
+  res.set('Cache-Control', 'no-cache');   // siempre se revisa: lo que guardes en el panel se ve al recargar (F5)
   res.json({ settings, categories, projects, spotlight: spotlight || null });
 }));
 
@@ -98,7 +102,7 @@ router.get('/founder', asyncH(async (req, res) => {
          FROM projects p LEFT JOIN categories c ON c.id = p.category_id
         WHERE p.published = 1 ORDER BY p.year DESC, p.sort_order LIMIT 8`);
   }
-  res.set('Cache-Control', 'public, max-age=60');
+  res.set('Cache-Control', 'no-cache');   // siempre se revisa: lo que guardes en el panel se ve al recargar (F5)
   res.json({ ...f, films, own });
 }));
 
