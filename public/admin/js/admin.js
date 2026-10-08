@@ -237,7 +237,8 @@
     ['Fundador / creador (aparece en "The studio" y tiene su propia página)', [
       ['founder_name', 'Nombre (su filmografía se arma sola con los proyectos donde figure como director o en los créditos con este mismo nombre)'], ['founder_role', 'Cargo (ej. Founder & Creative Director)'],
       ['founder_disciplines', 'Oficios, separados por comas (ej. Director, Screenwriter, Producer)'],
-      ['founder_photo_url', 'Foto (vertical, idealmente en blanco y negro)', 'url'],
+      ['founder_photo_url', 'Foto principal (portada de su página y sección del estudio; vertical, idealmente en blanco y negro)', 'url'],
+      ['founder_photo2_url', 'Segunda foto (junto a la biografía en su página; si la dejas vacía se repite la principal)', 'url'],
       ['founder_quote', 'Frase / cita destacada'],
       ['founder_teaser', 'Texto corto para la sección del estudio', 'textarea'],
       ['founder_bio', 'Biografía completa para su página (deja una línea en blanco entre párrafos)', 'textarea'],

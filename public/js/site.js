@@ -1266,6 +1266,7 @@
   function renderFounderPage(f) {
     const s = state.settings;
     const photo = safeUrl(f.photo_url) || safeUrl(s.about_image_url) || '';
+    const photo2 = safeUrl(f.photo2_url) || photo;   // foto de la biografía (distinta a la de portada si se sube una)
     const ds = disciplines();
     const first = String(f.name).split(/\s+/)[0];
     const lines = nameLines(f.name);
@@ -1297,7 +1298,7 @@
 
         ${bio ? `<section class="f-section f-bio">
           <aside class="f-bio__aside">
-            <img src="${esc(photo)}" alt="" loading="lazy">
+            <img src="${esc(photo2)}" alt="${esc(f.name)}" loading="lazy">
             <dl>
               ${f.role ? `<div><dt class="mono">Role</dt><dd>${esc(f.role)}</dd></div>` : ''}
               ${ds.length ? `<div><dt class="mono">Disciplines</dt><dd>${ds.map(esc).join(' · ')}</dd></div>` : ''}
