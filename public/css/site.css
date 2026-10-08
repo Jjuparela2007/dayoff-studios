@@ -33,7 +33,10 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+/* Sin "scroll-behavior: smooth" en html: rompe los cálculos de ScrollTrigger cuando recalcula con la
+   página ya bajada (dejaba un espacio negro entre el hero y el estreno y el título sin aparecer).
+   El desplazamiento suave de los enlaces del menú se hace desde site.js. */
+html { -webkit-text-size-adjust: 100%; }
 /* Nada puede ensanchar la página hacia los lados (en celular se podía arrastrar a la derecha).
    "clip" recorta sin crear una barra de scroll ni romper las secciones fijadas. */
 html, body { overflow-x: clip; max-width: 100%; }

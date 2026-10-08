@@ -978,6 +978,20 @@
       nav.classList.remove('is-open'); btn.setAttribute('aria-expanded', 'false'); document.body.classList.remove('is-locked');
     }));
 
+    // Enlaces internos (#work, #studio, #contact…): desplazamiento suave hecho en JS.
+    // (No se usa "scroll-behavior: smooth" en CSS porque descuadra las escenas fijadas de ScrollTrigger.)
+    document.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      const a = e.target.closest('a[href^="#"]');
+      const id = a && a.getAttribute('href').slice(1);
+      if (!id || id === 'latest') return;                 // #latest tiene su propio manejo (final de la escena)
+      const target = document.getElementById(id);
+      if (!target || target.hidden) return;
+      e.preventDefault();
+      const top = id === 'home' ? 0 : target.getBoundingClientRect().top + scrollY;
+      window.scrollTo({ top, behavior: REDUCED ? 'auto' : 'smooth' });
+    });
+
     // Timecode del hero (24 fps)
     const tc = $('.timecode');
     const t0 = performance.now();
