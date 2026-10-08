@@ -78,6 +78,45 @@ router.delete('/categories/:id', asyncH(async (req, res) => {
 const PROJECT_FIELDS = ['category_id', 'title', 'slug', 'tagline', 'year', 'duration', 'genre', 'synopsis',
   'director', 'poster_url', 'backdrop_url', 'trailer_url', 'featured', 'published', 'sort_order'];
 
+/* ── Director: un solo dato en dos lugares ──
+   El campo "Director/a" de la ficha y el crédito de dirección (pestaña Créditos) se mantienen iguales:
+   al guardar la ficha se crea/actualiza el crédito; al guardar los créditos se actualiza la ficha.
+   Varios directores: "Ana Ruiz & Luis Gil" (también vale coma o " y "). */
+const DIRECTOR_ROLE = /^(director|directora|direcci[oó]n|directed by|dirigida por|dirigido por)$/i;
+const splitNames = (t) => String(t || '').split(/\s*(?:&|,|\sy\s|\sand\s)\s*/i).map((x) => x.trim()).filter(Boolean);
+
+async function syncDirectorCredits(projectId, directorField) {
+  const names = splitNames(directorField);
+  if (!names.length) return;                       // campo vacío: no se tocan los créditos
+  const credits = await query(
+    `SELECT cr.id, cr.role, cr.sort_order, COALESCE(pe.name, cr.name) AS name FROM credits cr
+       LEFT JOIN people pe ON pe.id = cr.person_id WHERE cr.project_id = ? ORDER BY cr.sort_order, cr.id`, [projectId]);
+  const dirs = credits.filter((c) => DIRECTOR_ROLE.test(c.role));
+  for (const [i, name] of names.entries()) {
+    const [person] = await query('SELECT id FROM people WHERE name = ? LIMIT 1', [name]);   // si existe en Personas, se enlaza su bio
+    const pid = person ? person.id : null;
+    if (dirs[i]) {
+      if (dirs[i].name !== name) await query('UPDATE credits SET name = ?, person_id = ? WHERE id = ?', [name, pid, dirs[i].id]);
+    } else {
+      // Nuevo director: justo después de los que ya había (o al principio del equipo si no había ninguno)
+      const after = dirs.length ? Math.max(...dirs.map((d) => d.sort_order)) + i : -10 + i;
+      await query("INSERT INTO credits (project_id, person_id, name, role, department, sort_order) VALUES (?, ?, ?, 'Director', 'equipo', ?)",
+        [projectId, pid, name, after]);
+    }
+  }
+  for (const extra of dirs.slice(names.length)) await query('DELETE FROM credits WHERE id = ?', [extra.id]);
+}
+
+const creditsOf = (projectId) => query('SELECT * FROM credits WHERE project_id = ? ORDER BY department, sort_order, id', [projectId]);
+
+/** Guarda el slug anterior para que los enlaces viejos (/project/slug-viejo) sigan funcionando. */
+async function rememberSlug(projectId, newSlug) {
+  const [cur] = await query('SELECT slug FROM projects WHERE id = ?', [projectId]);
+  if (!cur || !cur.slug || cur.slug === newSlug) return;
+  await query('INSERT INTO project_slugs (slug, project_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE project_id = VALUES(project_id)', [cur.slug, projectId]);
+  await query('DELETE FROM project_slugs WHERE slug = ?', [newSlug]);   // el slug actual nunca es "viejo"
+}
+
 router.get('/projects', asyncH(async (req, res) => {
   res.json(await query(
     `SELECT p.id, p.title, p.slug, p.year, p.poster_url, p.published, p.featured, p.category_id,
@@ -102,6 +141,7 @@ router.post('/projects', asyncH(async (req, res) => {
   data.slug = await uniqueSlug('projects', slugify(data.slug || data.title));
   const { sql, values } = toSet(data);
   const r = await query(`INSERT INTO projects SET ${sql}`, values);
+  if (data.director) await syncDirectorCredits(r.insertId, data.director);
   res.status(201).json({ id: r.insertId, slug: data.slug });
 }));
 
@@ -109,10 +149,13 @@ router.put('/projects/:id', asyncH(async (req, res) => {
   const data = pick(req.body, PROJECT_FIELDS);
   if (data.slug !== undefined || data.title) {
     data.slug = await uniqueSlug('projects', slugify(data.slug || data.title), req.params.id);
+    await rememberSlug(req.params.id, data.slug);
   }
   const { sql, values } = toSet(data);
   if (sql) await query(`UPDATE projects SET ${sql} WHERE id = ?`, [...values, req.params.id]);
-  res.json({ ok: true, slug: data.slug });
+  if (data.director !== undefined) await syncDirectorCredits(req.params.id, data.director);
+  // Se devuelven los créditos para que la pestaña Créditos del panel quede al día sin recargar
+  res.json({ ok: true, slug: data.slug, credits: await creditsOf(req.params.id) });
 }));
 
 router.delete('/projects/:id', asyncH(async (req, res) => {
@@ -130,7 +173,14 @@ router.put('/projects/:id/credits', asyncH(async (req, res) => {
     department: ['reparto', 'artistas', 'equipo'].includes(c.department) ? c.department : 'equipo',
     sort_order: i
   })));
-  res.json({ ok: true });
+  // Si hay crédito(s) de dirección, la ficha toma ese nombre (si no hay ninguno, la ficha no se toca)
+  const dirs = list.filter((c) => DIRECTOR_ROLE.test(String(c.role || '').trim()) && c.name).map((c) => c.name.trim());
+  let director;
+  if (dirs.length) {
+    director = dirs.join(' & ');
+    await query('UPDATE projects SET director = ? WHERE id = ?', [director, req.params.id]);
+  }
+  res.json({ ok: true, director, credits: await creditsOf(req.params.id) });
 }));
 
 /** Reemplaza toda la galería de un proyecto en una transacción. */

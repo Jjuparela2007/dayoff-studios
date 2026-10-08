@@ -510,6 +510,8 @@
         $('#project-form [name=slug]').value = p.slug;
         const ver = $('.page-head a[target=_blank]');
         if (ver) ver.href = `/project/${p.slug}`;
+        // El director se copia solo al crédito de dirección: la pestaña Créditos se refresca con lo guardado
+        if (r.credits) setCredits(r.credits);
       }
     });
 
@@ -535,7 +537,13 @@
       </div>`;
     };
     const creditRows = $('#credit-rows');
-    creditRows.innerHTML = p.credits.map(creditRow).join('');
+    function setCredits(list) {
+      p.credits = list;
+      creditRows.innerHTML = list.map(creditRow).join('');
+      const tab = $('.tabs [data-tab=credits]');
+      if (tab) tab.textContent = `Créditos (${list.length})`;
+    }
+    setCredits(p.credits);
     $('#add-credit').addEventListener('click', () => creditRows.insertAdjacentHTML('beforeend', creditRow({ department: 'reparto' })));
     $('#save-credits').addEventListener('click', (e) => {
       const list = $$('.row', creditRows).map((r) => {
@@ -543,7 +551,12 @@
         const person = people.find((x) => x.name.toLowerCase() === name.toLowerCase());
         return { department: $('[data-k=department]', r).value, role: $('[data-k=role]', r).value.trim(), name, person_id: person ? person.id : null };
       }).filter((c) => c.name || c.role);
-      run(e.target, () => api(`/api/admin/projects/${p.id}/credits`, { method: 'PUT', body: list }), 'Créditos guardados');
+      run(e.target, () => api(`/api/admin/projects/${p.id}/credits`, { method: 'PUT', body: list }), 'Créditos guardados').then((r) => {
+        if (!r) return;
+        if (r.credits) setCredits(r.credits);
+        // …y al revés: el crédito de dirección actualiza el campo Director/a de la ficha
+        if (r.director) { p.director = r.director; const d = $('#project-form [name=director]'); if (d) d.value = r.director; }
+      });
     });
 
     /* ── Galería ── */

@@ -8,6 +8,12 @@
 const router = require('express').Router();
 const { query } = require('../db');
 const { asyncH } = require('../utils');
+// Textos de ejemplo del fundador: se usan si la base de datos todavía no los tiene (sin necesidad de db:update)
+const FOUNDER_DEFAULTS = require('../scripts/founder-defaults');
+const withFounder = (settings) => {
+  for (const [k, v] of Object.entries(FOUNDER_DEFAULTS)) if (settings[k] == null) settings[k] = v;
+  return settings;
+};
 
 router.get('/site', asyncH(async (req, res) => {
   const [settingsRows, categories, projects] = await Promise.all([
@@ -21,7 +27,7 @@ router.get('/site', asyncH(async (req, res) => {
              FROM projects p WHERE p.published = 1
             ORDER BY p.sort_order, p.year DESC, p.title`)
   ]);
-  const settings = Object.fromEntries(settingsRows.map((r) => [r.setting_key, r.setting_value]));
+  const settings = withFounder(Object.fromEntries(settingsRows.map((r) => [r.setting_key, r.setting_value])));
 
   // ESTRENO DESTACADO: el que se marca en el panel; si no hay ninguno, el más reciente
   // (mayor año; a igualdad, el marcado como "Destacado" y luego el primero en el orden del panel).
@@ -46,10 +52,13 @@ router.get('/site', asyncH(async (req, res) => {
 }));
 
 router.get('/projects/:slug', asyncH(async (req, res) => {
-  const rows = await query(
-    `SELECT p.*, c.name AS category_name, c.slug AS category_slug
-       FROM projects p LEFT JOIN categories c ON c.id = p.category_id
-      WHERE p.slug = ? AND p.published = 1`, [req.params.slug]);
+  const sql = `SELECT p.*, c.name AS category_name, c.slug AS category_slug
+                 FROM projects p LEFT JOIN categories c ON c.id = p.category_id WHERE p.published = 1 AND `;
+  let rows = await query(sql + 'p.slug = ?', [req.params.slug]);
+  // Enlace viejo (el proyecto cambió de título/slug): se busca en el historial y el sitio corrige la URL
+  if (!rows.length) {
+    rows = await query(sql + 'p.id = (SELECT project_id FROM project_slugs WHERE slug = ?)', [req.params.slug]).catch(() => []);
+  }
   if (!rows.length) return res.status(404).json({ error: 'Proyecto no encontrado' });
   const project = rows[0];
 
@@ -68,7 +77,8 @@ router.get('/projects/:slug', asyncH(async (req, res) => {
    se muestran las últimas producciones del estudio. */
 router.get('/founder', asyncH(async (req, res) => {
   const rows = await query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'founder\\_%'");
-  const f = Object.fromEntries(rows.map((r) => [r.setting_key.replace('founder_', ''), r.setting_value]));
+  const all = withFounder(Object.fromEntries(rows.map((r) => [r.setting_key, r.setting_value])));
+  const f = Object.fromEntries(Object.entries(all).map(([k, v]) => [k.replace('founder_', ''), v]));
   if (!f.name) return res.status(404).json({ error: 'Sin perfil de fundador' });
   const roleSql = `SELECT cr.role FROM credits cr LEFT JOIN people pe ON pe.id = cr.person_id
                     WHERE cr.project_id = p.id AND COALESCE(pe.name, cr.name) = ? ORDER BY cr.sort_order, cr.id LIMIT 1`;

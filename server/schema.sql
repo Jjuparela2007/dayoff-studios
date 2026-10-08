@@ -98,3 +98,10 @@ CREATE TABLE IF NOT EXISTS uploads (
   url           VARCHAR(500) NOT NULL,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Slugs anteriores de cada proyecto: si cambias el título/slug, los enlaces viejos redirigen al nuevo
+CREATE TABLE IF NOT EXISTS project_slugs (
+  slug       VARCHAR(200) NOT NULL PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  CONSTRAINT fk_slug_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -12,6 +12,11 @@ const FOUNDER = require('./founder-defaults');
 const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`));
 
 (async () => {
+  // Tabla de slugs anteriores (redirección de enlaces viejos cuando cambias el título de un proyecto)
+  await query(`CREATE TABLE IF NOT EXISTS project_slugs (
+    slug VARCHAR(200) NOT NULL PRIMARY KEY, project_id INT UNSIGNED NOT NULL,
+    CONSTRAINT fk_slug_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
   const [row] = await query("SELECT setting_value FROM settings WHERE setting_key = 'hero_videos'");
   const current = row ? row.setting_value : null;
   // Se escribe la demo si no hay videos o si quedaron los enlaces de ejemplo externos de la versión anterior

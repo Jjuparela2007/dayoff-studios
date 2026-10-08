@@ -1087,7 +1087,11 @@
       fetch(`/api/projects/${encodeURIComponent(slug)}`).then((r) => (r.ok ? r.json() : null)),
       curtain.in()
     ]);
-    if (!data) { await curtain.out(); return; }
+    if (!data) {
+      // Proyecto inexistente o despublicado: se vuelve a la portada con una URL limpia
+      if (!push && /^\/(?:project|proyecto)\//.test(location.pathname)) history.replaceState({}, '', '/');
+      await curtain.out(); return;
+    }
 
     ST && ST.getAll().filter((t) => t.scroller === detailScroll).forEach((t) => t.kill());
     renderDetail(data);
@@ -1096,7 +1100,9 @@
     document.body.classList.add('is-locked');
     state.detailOpen = true;
     document.title = `${data.title} — ${state.settings.site_name || 'DayOff Studios'}`;
-    if (push) history.pushState({ slug }, '', `/project/${slug}`);
+    // Siempre con el slug ACTUAL: si se llegó por un enlace viejo (el título cambió), la barra de direcciones se corrige
+    if (push) history.pushState({ slug: data.slug }, '', `/project/${data.slug}`);
+    else if (location.pathname !== `/project/${data.slug}`) history.replaceState({ slug: data.slug }, '', `/project/${data.slug}`);
     await curtain.out();
     animateDetail();
     $('.detail__close').focus({ preventScroll: true });
