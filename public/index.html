@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DayOff Studios — Film Production Company</title>
+  <meta name="description" content="DayOff Studios: film production company — feature films, short films, series, commercials and documentaries.">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+
+  <!-- Tipografías: Inter Tight (titulares), Instrument Sans (texto), JetBrains Mono (claqueta/timecode) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300..700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/site.css">
+  <!-- Modo claro/oscuro: se carga sin defer para aplicar el tema antes de pintar -->
+  <script src="/js/theme.js"></script>
+</head>
+<body class="is-loading">
+
+  <!-- ═══ Grano de película (canvas generado por JS) ═══ -->
+  <div class="grain" aria-hidden="true"></div>
+  <!-- ═══ Viñeta cinematográfica ═══ -->
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- ═══════════ PRELOADER: cuenta regresiva de película + logo ═══════════ -->
+  <div class="preloader" aria-hidden="true">
+    <div class="preloader__leader">
+      <svg viewBox="0 0 200 200" class="preloader__ring">
+        <circle cx="100" cy="100" r="92" class="ring-bg"/>
+        <circle cx="100" cy="100" r="92" class="ring-sweep" pathLength="100"/>
+        <line x1="100" y1="0" x2="100" y2="200"/><line x1="0" y1="100" x2="200" y2="100"/>
+      </svg>
+      <span class="preloader__count">3</span>
+    </div>
+    <!-- Revelado con máscara: capa negra con el logo "recortado"; por el recorte se ve el sitio.
+         El logo crece hasta que el recorte cubre toda la pantalla. Se construye en site.js. -->
+    <svg class="preloader__mask" aria-hidden="true"></svg>
+    <p class="preloader__tagline mono" data-setting="preloader_tagline"></p>
+    <div class="preloader__progress"><span></span></div>
+    <!-- Órdenes reales de un set de rodaje: avanzan con la carga y terminan en "Action!" -->
+    <div class="preloader__meta">
+      <span class="preloader__call"><i class="preloader__rec"></i><b>Quiet on set</b></span>
+      <span><span class="preloader__slate">SC. 01 · TK. 01</span><span class="preloader__pct">000%</span></span>
+    </div>
+  </div>
+
+  <!-- ═══════════ TRANSICIÓN (cortina entre vistas) ═══════════ -->
+  <div class="curtain" aria-hidden="true">
+    <div class="curtain__panel"></div>
+    <div class="curtain__panel"></div>
+    <div class="curtain__brand"><div class="logo-mark logo-mark--lg" data-logo></div></div>
+  </div>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header class="header">
+    <a href="/" class="brand" aria-label="DayOff Studios — home">
+      <span class="logo-mark" data-logo></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#latest" class="nav__latest" hidden><i></i>Latest release</a>
+      <a href="#categories">Categories</a>
+      <a href="#work">Work</a>
+      <a href="#studio">Studio</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <!-- Botón modo claro / oscuro -->
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to light mode" aria-pressed="false">
+      <svg viewBox="0 0 24 24" class="theme-toggle__sun" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+      <svg viewBox="0 0 24 24" class="theme-toggle__moon" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+    <button class="menu-btn" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+  </header>
+
+  <main id="main">
+
+    <!-- ═══════════ HERO ═══════════ -->
+    <section class="hero" id="home">
+      <div class="hero__media">
+        <!-- Se rellena con <video> o <img> según lo configurado en el panel -->
+      </div>
+      <div class="hero__shade"></div>
+
+      <div class="hero__content">
+        <p class="hero__kicker mono" data-setting="hero_kicker"></p>
+        <h1 class="hero__title" data-setting="hero_title" data-split></h1>
+        <p class="hero__slogan" data-setting="slogan"></p>
+        <!-- Acceso directo al estreno (se rellena por JS) -->
+        <a href="#latest" class="hero__release" hidden>
+          <span class="hero__release-badge mono"><i></i>New release</span>
+          <span class="hero__release-title"></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <!-- Botón en la esquina inferior derecha del hero -->
+      <a href="#work" class="btn-ghost">
+        <span>View our work</span>
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+
+      <div class="hero__hud mono" aria-hidden="true">
+        <span class="rec"><i></i>REC</span>
+        <span class="timecode">00:00:00:00</span>
+        <span>ISO 800 · 24 FPS · 2.39:1</span>
+      </div>
+      <div class="hero__scroll mono" aria-hidden="true"><span>Scroll</span><i></i></div>
+    </section>
+
+    <!-- ═══════════ ESTRENO: el proyecto más reciente — escena principal de la página ═══════════
+         Escritorio: la sección se fija y, al hacer scroll, "DayOff Studios presents" → el cuadro
+         se expande a pantalla completa con el tráiler de fondo → título, ficha y créditos. -->
+    <section class="spotlight" id="latest" hidden>
+      <div class="spotlight__stage">
+        <div class="spotlight__frame">
+          <div class="spotlight__media"><img class="spotlight__img" alt=""></div>
+          <div class="spotlight__shade"></div>
+        </div>
+        <p class="spotlight__presents mono" aria-hidden="true">
+          <span>DayOff Studios</span><b>presents</b><span class="spotlight__presents-kind"></span>
+        </p>
+        <div class="spotlight__ghost" aria-hidden="true"><span>New Release</span><span>New Release</span></div>
+
+        <div class="spotlight__inner">
+          <div class="spotlight__info">
+            <p class="spotlight__badge mono"><i></i><span>Latest release</span><b class="spotlight__year"></b></p>
+            <h2 class="spotlight__title"></h2>
+            <p class="spotlight__tagline"></p>
+            <p class="spotlight__meta mono"></p>
+            <p class="spotlight__synopsis"></p>
+            <div class="spotlight__actions">
+              <button class="btn-solid spotlight__play" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg>
+                <span>Watch trailer</span>
+              </button>
+              <a class="btn-ghost spotlight__more" href="#">
+                <span>View project</span>
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
+          </div>
+          <figure class="spotlight__poster"><img alt=""></figure>
+        </div>
+
+        <!-- Bloque de créditos estilo póster de cine -->
+        <div class="spotlight__billing" aria-label="Credits"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ MARQUESINA ═══════════ -->
+    <div class="marquee" aria-hidden="true"><div class="marquee__track"></div></div>
+
+    <!-- ═══════════ DESTACADOS (scroll horizontal fijado) ═══════════ -->
+    <section class="featured" id="featured">
+      <div class="featured__pin">
+        <header class="section-head">
+          <span class="mono section-head__num">01</span>
+          <h2 class="section-title" data-reveal>Now Showing</h2>
+        </header>
+        <div class="featured__track"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ CATEGORÍAS ═══════════ -->
+    <section class="categories" id="categories">
+      <header class="section-head">
+        <span class="mono section-head__num">02</span>
+        <h2 class="section-title" data-reveal>Categories</h2>
+      </header>
+      <ul class="cat-list"></ul>
+      <div class="cat-preview" aria-hidden="true"><img alt=""></div>
+    </section>
+
+    <!-- ═══════════ OBRAS (galería filtrable) ═══════════ -->
+    <section class="works" id="work">
+      <header class="section-head">
+        <span class="mono section-head__num">03</span>
+        <h2 class="section-title" data-reveal>Work</h2>
+      </header>
+      <div class="filters" role="tablist" aria-label="Filter by category">
+        <span class="filters__ink"></span>
+      </div>
+      <div class="grid"></div>
+    </section>
+
+    <!-- ═══════════ ESTUDIO ═══════════ -->
+    <section class="about" id="studio">
+      <div class="about__img" data-parallax><img alt="" loading="lazy"></div>
+      <div class="about__body">
+        <header class="section-head">
+          <span class="mono section-head__num">04</span>
+          <h2 class="section-title" data-setting="about_title" data-reveal></h2>
+        </header>
+        <div class="about__text" data-setting="about_text" data-multiline data-reveal-lines></div>
+        <div class="stats">
+          <div><b data-setting="stat_1_value" data-count></b><span data-setting="stat_1_label"></span></div>
+          <div><b data-setting="stat_2_value" data-count></b><span data-setting="stat_2_label"></span></div>
+          <div><b data-setting="stat_3_value" data-count></b><span data-setting="stat_3_label"></span></div>
+        </div>
+      </div>
+
+      <!-- Fundador: protagonista de la sección (textos en el panel → "Fundador / creador") -->
+      <article class="founder" hidden>
+        <a class="founder__portrait" href="#" data-founder-link aria-label="Learn more about the founder">
+          <img alt="" loading="lazy">
+          <svg class="founder__ring" viewBox="0 0 200 200" aria-hidden="true">
+            <defs><path id="founder-ring-path" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+            <circle class="founder__ring-bg" cx="100" cy="100" r="99"/>
+            <circle class="founder__ring-dot" cx="100" cy="100" r="5"/>
+            <text><textPath href="#founder-ring-path" class="founder__ring-text"></textPath></text>
+          </svg>
+        </a>
+        <div class="founder__body">
+          <p class="founder__kicker mono"><i></i><span data-setting="founder_role"></span></p>
+          <h3 class="founder__name"></h3>
+          <blockquote class="founder__quote"></blockquote>
+          <p class="founder__teaser" data-setting="founder_teaser"></p>
+          <a class="founder__link" href="#" data-founder-link>
+            <span class="founder__link-label">Learn more about him</span>
+            <span class="founder__link-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═══════════ CONTACTO ═══════════ -->
+    <section class="contact" id="contact">
+      <p class="mono contact__kicker">Final scene</p>
+      <h2 class="contact__title" data-setting="contact_title" data-split></h2>
+      <p class="contact__text" data-setting="contact_text"></p>
+      <a class="contact__mail" data-setting-href="mailto:contact_email" data-setting="contact_email" data-cursor="Escribir"></a>
+      <div class="contact__info mono">
+        <span data-setting="contact_phone"></span>
+        <span data-setting="contact_address"></span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a href="#home" class="footer__logo" aria-label="DayOff Studios — back to top"><span class="logo-mark" data-logo></span></a>
+        <p class="footer__copy" data-copyright></p>
+      </div>
+      <!-- Redes: cada ícono solo aparece si su enlace está configurado en el panel -->
+      <nav class="footer__social" aria-label="Social media">
+        <a data-setting-href="facebook_url" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" class="fill"/><path class="cut" d="M13.4 21v-6.9h2.3l.35-2.7h-2.65V9.7c0-.8.25-1.3 1.35-1.3h1.4V6c-.25 0-1.05-.1-2-.1-2 0-3.35 1.2-3.35 3.45v2.05H8.5v2.7h2.3V21z"/></svg>
+        </a>
+        <a data-setting-href="instagram_url" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" class="stroke"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r=".6" class="fill"/></svg>
+        </a>
+        <a data-setting-href="linkedin_url" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="3.5" class="fill"/><g class="cut"><rect x="6.3" y="9.8" width="2.5" height="7.7"/><circle cx="7.55" cy="7.1" r="1.45"/><path d="M10.8 9.8h2.4v1.1c.4-.7 1.3-1.3 2.6-1.3 2.4 0 2.9 1.5 2.9 3.6v4.3h-2.5v-3.8c0-.9-.1-2-1.3-2-1.3 0-1.6 1-1.6 2v3.8h-2.5z"/></g></svg>
+        </a>
+        <a data-setting-href="x_url" target="_blank" rel="noopener" aria-label="X">
+          <svg viewBox="0 0 24 24"><path class="fill" d="M3.5 3.5h5.2l11.8 17h-5.2z"/><path class="stroke" d="M20 3.5 13.6 10.6M10.4 13.6 4 20.5"/></svg>
+        </a>
+        <a data-setting-href="youtube_url" target="_blank" rel="noopener" aria-label="YouTube">
+          <svg viewBox="0 0 24 24"><rect x="1.8" y="5" width="20.4" height="14" rx="4.2" class="fill"/><path class="cut" d="M10 8.9v6.2l5.3-3.1z"/></svg>
+        </a>
+        <a data-setting-href="vimeo_url" target="_blank" rel="noopener" aria-label="Vimeo">
+          <svg viewBox="0 0 24 24" class="stroke"><path d="M3 8.6c1.4-1.1 2.8-2.6 4-1.6 1.1 1 1.3 6.6 2.6 7.9.9.9 2.6-1.9 3.4-3.8.8-1.9-.2-2.9-1.6-2.2.9-3.2 4.3-4.4 6-3.3 1.8 1.1.9 4.4-1.4 7.6-2.3 3.2-5 5.9-6.5 5.1-1.4-.7-2.3-7.2-3.4-8.3-.9-.9-2 .3-2.6.7"/></svg>
+        </a>
+        <a data-setting-href="tiktok_url" target="_blank" rel="noopener" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" class="stroke"><path d="M14.5 3.5v11.3a3.9 3.9 0 1 1-3.9-3.9"/><path d="M14.5 3.5c.4 2.6 2.1 4.3 4.8 4.5"/></svg>
+        </a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- ═══════════ FICHA DE PROYECTO (vista de detalle) ═══════════ -->
+  <div class="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title" hidden>
+    <button class="detail__close" aria-label="Close"><span></span><span></span></button>
+    <div class="detail__scroll"><!-- se rellena por JS --></div>
+  </div>
+
+  <!-- ═══════════ BIOGRAFÍA (popover) ═══════════ -->
+  <div class="bio" hidden>
+    <div class="bio__card">
+      <button class="bio__close" aria-label="Close">×</button>
+      <img class="bio__photo" alt="">
+      <div>
+        <p class="mono bio__kind"></p>
+        <h4 class="bio__name"></h4>
+        <p class="bio__text"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ VISOR DE GALERÍA (lightbox) ═══════════ -->
+  <div class="lightbox" hidden>
+    <button class="lightbox__close" aria-label="Close">×</button>
+    <button class="lightbox__nav lightbox__prev" aria-label="Previous">‹</button>
+    <figure class="lightbox__stage"></figure>
+    <button class="lightbox__nav lightbox__next" aria-label="Next">›</button>
+    <p class="lightbox__count mono"></p>
+  </div>
+
+  <!-- GSAP + ScrollTrigger (animaciones). Si no cargan, el sitio funciona igual sin animaciones. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <script src="/js/logo.js" defer></script>
+  <script src="/js/site.js" defer></script>
+</body>
+</html>

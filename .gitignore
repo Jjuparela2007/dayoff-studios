@@ -1,0 +1,15 @@
+node_modules/
+.env
+uploads/*
+!uploads/.gitkeep
+*.log
+.DS_Store
+
+# Producción
+.env.production
+*.pem
+.vercel
+
+# Clips de demostración (solo local) y videos fuente
+public/media/showreel-*
+media-sources/

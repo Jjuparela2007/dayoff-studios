@@ -1,0 +1,10 @@
+# No subir a Vercel
+uploads/
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.pem
+*.log
+public/media/showreel-*
+media-sources/

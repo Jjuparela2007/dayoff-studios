@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel · DayOff Studio</title>
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300..700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin/css/admin.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════ LOGIN ═══════════ -->
+  <section class="login" id="login" hidden>
+    <form class="login__card" autocomplete="on">
+      <div class="login__brand"><span class="logo-mark logo-mark--login" data-logo></span></div>
+      <h1>Panel de administración</h1>
+      <label>Usuario<input name="username" autocomplete="username" required></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="login__error" role="alert"></p>
+      <button class="btn btn--primary" type="submit">Entrar</button>
+      <div class="login__foot"><a href="/" class="login__back">← Volver al sitio</a>
+        <button class="btn btn--ghost btn--sm theme-btn" type="button" data-theme-toggle aria-label="Cambiar a modo claro">
+          <span class="theme-btn__dark">☀ Claro</span><span class="theme-btn__light">☾ Oscuro</span>
+        </button></div>
+    </form>
+  </section>
+
+  <!-- ═══════════ APP ═══════════ -->
+  <div class="app" id="app" hidden>
+    <aside class="side">
+      <div class="side__brand"><span class="logo-mark" data-logo></span><i>panel</i></div>
+      <nav class="side__nav">
+        <a href="#dashboard" data-view="dashboard">Resumen</a>
+        <a href="#textos" data-view="textos">Textos del sitio</a>
+        <a href="#categorias" data-view="categorias">Categorías</a>
+        <a href="#proyectos" data-view="proyectos">Proyectos</a>
+        <a href="#personas" data-view="personas">Actores y artistas</a>
+        <a href="#medios" data-view="medios">Biblioteca de medios</a>
+        <a href="#cuenta" data-view="cuenta">Cuenta</a>
+      </nav>
+      <div class="side__foot">
+        <a href="/" target="_blank" class="btn btn--ghost btn--sm">Ver sitio ↗</a>
+        <button class="btn btn--ghost btn--sm" id="logout">Salir</button>
+        <button class="btn btn--ghost btn--sm theme-btn" type="button" data-theme-toggle aria-label="Cambiar a modo claro">
+          <span class="theme-btn__dark">☀ Claro</span><span class="theme-btn__light">☾ Oscuro</span>
+        </button>
+      </div>
+    </aside>
+    <main class="main" id="view"></main>
+  </div>
+
+  <!-- ═══════════ Selector de medios (modal) ═══════════ -->
+  <dialog class="picker" id="picker">
+    <div class="picker__head">
+      <h3>Elegir archivo</h3>
+      <label class="btn btn--primary btn--sm">Subir nuevo<input type="file" multiple hidden accept="image/*,video/mp4,video/webm,video/quicktime"></label>
+      <button class="btn btn--ghost btn--sm" data-close>Cerrar</button>
+    </div>
+    <p class="hint">También puedes pegar una URL externa (CDN, Vimeo, YouTube) directamente en el campo.</p>
+    <div class="media-grid" id="picker-grid"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="/js/logo.js" defer></script>
+  <script src="/admin/js/admin.js" defer></script>
+</body>
+</html>

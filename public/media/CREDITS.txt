@@ -1,0 +1,3 @@
+Clips de demostración del showreel (generados con npm run demo:clips)
+
+Big Buck Bunny — © 2008 Blender Foundation | www.bigbuckbunny.org — CC BY 3.0
