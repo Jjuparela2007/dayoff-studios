@@ -853,7 +853,25 @@
     if ($('.founder') && !$('.founder').hidden) {
       const st = { trigger: '.founder', start: 'top 72%' };
       gsap.fromTo('.founder__portrait img', { clipPath: 'inset(100% 0 0 0)', scale: 1.25 }, { clipPath: 'inset(0% 0 0 0)', scale: 1, duration: 1.6, ease: 'power4.inOut', scrollTrigger: st });
-      gsap.from('.founder__ring', { scale: 0, opacity: 0, duration: 1.2, ease: 'back.out(1.6)', delay: .8, scrollTrigger: st });
+      // Visor: las esquinas encuadran, la imagen hace "rack focus" (borrosa → nítida) y entra la claqueta, se abre y ¡clac!
+      gsap.from('.vf-c', { scale: 1.6, opacity: 0, duration: 1.1, ease: 'power3.out', delay: .9, scrollTrigger: st });
+      gsap.from('.vf-rec, .vf-tc, .vf-meta, .vf-cross', { opacity: 0, duration: .6, stagger: .08, delay: 1.3, scrollTrigger: st });
+      gsap.fromTo('.founder__portrait img', { filter: 'grayscale(1) contrast(1.08) brightness(.92) blur(10px)' },
+        { filter: 'grayscale(1) contrast(1.08) brightness(.92) blur(0px)', duration: 1.4, ease: 'power2.out', delay: .9, scrollTrigger: st, clearProps: 'filter' });
+      const clap = () => {
+        const t = gsap.timeline();
+        t.to('.slate__stick--top', { rotate: -32, duration: .35, ease: 'power2.out' })
+          .to('.slate__stick--top', { rotate: 0, duration: .11, ease: 'power4.in' }, '+=.18')
+          .fromTo('.founder__slate', { x: 0 }, { x: 3, duration: .04, repeat: 5, yoyo: true, ease: 'none', clearProps: 'x' })
+          .fromTo('.founder__flash', { opacity: .55 }, { opacity: 0, duration: .5, ease: 'power2.out' }, '<');
+        return t;
+      };
+      gsap.timeline({ scrollTrigger: st, delay: 1 })
+        .from('.founder__slate', { y: 90, rotate: 14, opacity: 0, duration: .9, ease: 'back.out(1.4)' })
+        .add(clap(), '+=.1');
+      // Al pasar el cursor por la foto: otra toma
+      let clapping = null;
+      $('.founder__portrait').addEventListener('mouseenter', () => { if (!clapping || !clapping.isActive()) clapping = clap(); });
       gsap.from('.founder__name .w > span', { yPercent: 110, duration: 1.2, stagger: .12, ease: 'power4.out', delay: .3, scrollTrigger: st });
       gsap.from('.founder__kicker i', { scaleX: 0, transformOrigin: 'left', duration: 1, ease: 'power3.out', scrollTrigger: st });
       gsap.from('.founder__kicker span, .founder__quote, .founder__teaser, .founder__link', { opacity: 0, y: 26, duration: 1, stagger: .1, ease: 'power3.out', delay: .55, scrollTrigger: st });
@@ -1191,11 +1209,11 @@
     const img = $('.founder__portrait img', box);
     img.src = safeUrl(s.founder_photo_url) || safeUrl(s.about_image_url) || '';
     img.alt = s.founder_name;
-    // Sello giratorio con sus oficios; textLength reparte el texto exacto alrededor del círculo
-    const ring = $('.founder__ring-text', box);
-    const words = disciplines().length ? disciplines() : [s.founder_role || 'Founder'];
-    ring.textContent = words.map((d) => `${d} · `).join('').toUpperCase();
-    ring.setAttribute('textLength', '486'); ring.setAttribute('lengthAdjust', 'spacing');
+    // Claqueta con sus datos (como la que se usa en el set) y fecha de hoy
+    $('.slate-dir', box).textContent = s.founder_name;
+    $('.slate-prod', box).textContent = s.site_name || 'DayOff Studios';
+    const d = new Date(), two = (n) => String(n).padStart(2, '0');
+    $('.slate-date', box).textContent = `${two(d.getMonth() + 1)}.${two(d.getDate())}.${String(d.getFullYear()).slice(2)}`;
     const first = s.founder_name.split(/\s+/)[0];
     $('.founder__link-label', box).textContent = 'Learn more about him';
     $$('[data-founder-link]').forEach((a) => {
@@ -1209,6 +1227,19 @@
       openFounder();
     });
     box.dataset.first = first;
+    // Timecode del visor (24 fps) — solo corre mientras el bloque está en pantalla
+    const tc = $('.vf-tc', box);
+    if (tc && !REDUCED) {
+      let on = false, t0 = performance.now();
+      const pad = (n) => String(n).padStart(2, '0');
+      const tick = (now) => {
+        if (!on) return;
+        const f = Math.floor((now - t0) / (1000 / 24));
+        tc.textContent = `${pad(Math.floor(f / 86400) % 24)}:${pad(Math.floor(f / 1440) % 60)}:${pad(Math.floor(f / 24) % 60)}:${pad(f % 24)}`;
+        requestAnimationFrame(tick);
+      };
+      new IntersectionObserver(([en]) => { const was = on; on = en.isIntersecting; if (on && !was) requestAnimationFrame(tick); }).observe(box);
+    }
   }
 
   let founderSwap = null;

@@ -210,12 +210,28 @@
       <article class="founder" hidden>
         <a class="founder__portrait" href="#" data-founder-link aria-label="Learn more about the founder">
           <img alt="" loading="lazy">
-          <svg class="founder__ring" viewBox="0 0 200 200" aria-hidden="true">
-            <defs><path id="founder-ring-path" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
-            <circle class="founder__ring-bg" cx="100" cy="100" r="99"/>
-            <circle class="founder__ring-dot" cx="100" cy="100" r="5"/>
-            <text><textPath href="#founder-ring-path" class="founder__ring-text"></textPath></text>
-          </svg>
+<span class="founder__flash" aria-hidden="true"></span>
+          <!-- Visor de cámara: esquinas de encuadre, REC, timecode y datos de cámara -->
+          <span class="founder__vf" aria-hidden="true">
+            <i class="vf-c vf-tl"></i><i class="vf-c vf-tr"></i><i class="vf-c vf-bl"></i><i class="vf-c vf-br"></i>
+            <span class="vf-rec mono"><b></b>REC</span>
+            <span class="vf-tc mono">00:00:00:00</span>
+            <span class="vf-meta mono">4K · 24 FPS · ISO 800</span>
+            <span class="vf-cross"></span>
+          </span>
+          <!-- Claqueta: se abre y se cierra de golpe al aparecer (y al pasar el cursor) -->
+          <span class="founder__slate" aria-hidden="true">
+            <span class="slate__stick slate__stick--top"></span>
+            <span class="slate__stick slate__stick--base"></span>
+            <span class="slate__board">
+              <span class="slate__row slate__row--wide"><small>Prod.</small><b class="slate-prod">DayOff Studios</b></span>
+              <span class="slate__row slate__row--wide"><small>Director</small><b class="slate-dir"></b></span>
+              <span class="slate__row"><small>Roll</small><b>A001</b></span>
+              <span class="slate__row"><small>Scene</small><b>01</b></span>
+              <span class="slate__row"><small>Take</small><b>01</b></span>
+              <span class="slate__row slate__row--wide slate__row--foot"><small>Date</small><b class="slate-date"></b><small>Day / Ext.</small></span>
+            </span>
+          </span>
         </a>
         <div class="founder__body">
           <p class="founder__kicker mono"><i></i><span data-setting="founder_role"></span></p>
