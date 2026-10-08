@@ -253,7 +253,11 @@
 
       this.v.forEach((v) => {
         v.addEventListener('error', () => { v.dataset.failed = '1'; if (v === this.v[this.cur]) this.onError(); });
-        v.addEventListener('ended', () => { if (v === this.v[this.cur]) this.next(); });
+        v.addEventListener('ended', () => {
+          if (v !== this.v[this.cur]) return;
+          if (performance.now() < this.holdUntil) { v.currentTime = 0; this.play(v); return; }   // nunca corta durante la intro
+          this.next();
+        });
       });
       if (urls.length === 1) this.v[0].loop = true;
 
@@ -280,10 +284,22 @@
     },
     ready() { return this.readyP || Promise.resolve(); },
     /** Arranca el showreel desde el PRIMER clip. Se llama cuando la portada se revela. */
-    begin() {
+    begin(holdSec = 0) {
       if (!this.v || this.started) return;
       this.started = true;
       this.show(0, true);
+      // Mientras dura la revelación con el logo, el primer clip NO puede terminar ni cambiar
+      // (con clips cortos, p. ej. 3 s, el cambio se veía como "otra máscara"). Se reproduce en
+      // cámara lenta suave para que dure toda la intro y luego sigue el showreel normal.
+      if (holdSec > 0) {
+        this.holdUntil = performance.now() + holdSec * 1000;
+        const v = this.v[0];
+        const slow = () => {
+          const limit = Math.min(v.duration || this.clip, this.clip);
+          v.playbackRate = Math.max(.5, Math.min(1, limit / (holdSec + 1)));
+        };
+        v.duration ? slow() : v.addEventListener('loadedmetadata', slow, { once: true });
+      }
       this.tick();
     },
     load(v, i) { delete v.dataset.failed; v.src = this.urls[i % this.urls.length]; v.load(); },
@@ -297,6 +313,7 @@
     show(layer, first = false) {
       const inV = this.v[layer], outV = this.v[1 - layer];
       inV.currentTime = 0;
+      inV.playbackRate = 1;
       this.play(inV);
       inV.classList.add('is-active');
       outV.classList.remove('is-active');
@@ -335,7 +352,7 @@
         if (v.currentTime !== this.lastT) { this.lastT = v.currentTime; this.lastMove = now; if (v.currentTime > .5) this.failed = 0; }
         else if (now - this.lastMove > (v.dataset.failed ? 300 : 8000) && !this.switching) { this.lastMove = now; this.onError(); }
       }
-      if (v && this.urls.length > 1 && !v.paused && v.duration) {
+      if (v && this.urls.length > 1 && !v.paused && v.duration && !(performance.now() < this.holdUntil)) {
         const limit = Math.min(v.duration, this.clip);
         if (v.currentTime >= limit - this.FADE / 2) this.next();
       }
@@ -442,7 +459,8 @@
   /** Créditos estilo póster: "Directed by X · Starring A · B · C · Cinematography Y …" */
   function billingBlock(p) {
     const cr = p.credits || [];
-    const director = cr.find((c) => /^direct/i.test(c.role) && c.department === 'equipo')?.name || p.director;
+    // El campo "Director/a" de la ficha manda; si está vacío, se usa el crédito de dirección
+    const director = p.director || cr.find((c) => /^direct/i.test(c.role) && c.department === 'equipo')?.name;
     const cast = cr.filter((c) => c.department === 'reparto').slice(0, 4).map((c) => c.name);
     const crew = cr.filter((c) => c.department !== 'reparto' && !/^direct(or|ed)$/i.test(c.role) && c.name !== director).slice(0, 4);
     const item = (label, name) => `<span><small>${esc(label)}</small>${esc(name)}</span>`;
@@ -1397,7 +1415,7 @@
     }
     moveInk();
     uiInteractions();
-    await preloader.finish((at) => { heroReel.begin(); heroIntro(at); });
+    await preloader.finish((at) => { heroReel.begin(at + .6); heroIntro(at); });   // at+.6 ≈ fin del zoom del logo
     // ScrollTrigger también "recuerda" la posición anterior y la restaura: se le pide que no lo haga
     if (ST) ST.clearScrollMemory('manual');
     scrollTo(0, 0);

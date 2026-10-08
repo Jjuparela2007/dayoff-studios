@@ -503,7 +503,22 @@
         }
       }
       if (r && isNew) location.hash = `proyectos/${r.id}`;
+      // Refresca el encabezado, el slug y el enlace "Ver en el sitio" con lo recién guardado
+      if (r && !isNew) {
+        p.title = body.title; p.slug = r.slug || p.slug;
+        $('.page-head h1').textContent = p.title;
+        $('#project-form [name=slug]').value = p.slug;
+        const ver = $('.page-head a[target=_blank]');
+        if (ver) ver.href = `/project/${p.slug}`;
+      }
     });
+
+    // Slug automático: mientras no lo hayas escrito a mano, sigue al título (Avatar: Fire and Ash → avatar-fire-and-ash)
+    const toSlug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const titleIn = $('#project-form [name=title]'), slugIn = $('#project-form [name=slug]');
+    let slugAuto = !slugIn.value || slugIn.value === toSlug(titleIn.value) || slugIn.value.replace(/-\d+$/, '') === toSlug(titleIn.value);
+    titleIn.addEventListener('input', () => { if (slugAuto) slugIn.value = toSlug(titleIn.value); });
+    slugIn.addEventListener('input', () => { slugAuto = !slugIn.value; });
     if (isNew) return;
 
     /* ── Créditos ── */
