@@ -30,6 +30,15 @@
   // 1) Aplicar YA (antes de que se pinte el body)
   apply(saved() === 'light' ? 'light' : 'dark');
 
+  // 1b) Fuentes de Google sin bloquear el primer pintado: el <link rel="preload" data-fonts> ya las está
+  //     descargando; aquí se convierten en hoja de estilos (insertada por script = no bloquea el render)
+  var pre = document.querySelector('link[rel="preload"][data-fonts]');
+  if (pre) {
+    var css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = pre.href;
+    document.head.appendChild(css);
+  }
+
   // 2) Cambiar de tema con transición tipo "iris"
   function toggle(origin) {
     var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';

@@ -3,6 +3,14 @@
    Paleta: negro de sala, papel de póster, ámbar de proyector.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Fuentes (alojadas en /public/fonts; licencia OFL en /fonts/LICENSE.txt) ── */
+@font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('/fonts/inter-tight-latin-wght-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/instrument-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/instrument-sans-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/instrument-sans-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2'); }
+
 :root {
   --bg: #0a0908;          /* negro de sala */
   --bg-2: #131110;        /* carbón */
@@ -158,9 +166,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero__content { position: relative; z-index: 3; padding: 0 var(--gutter) 96px; max-width: 1300px; }
 .hero__kicker { color: var(--accent); margin: 0 0 22px; }
 .hero__title { font: 400 clamp(46px, 9.2vw, 150px)/.92 var(--f-display); letter-spacing: -.02em; margin: 0 0 28px; }
+/* Alturas de línea fijas: el cambio de fuente (respaldo → fuente real) no mueve el hero */
+.hero__kicker { line-height: 18px; }
+.hero__title *, .hero__slogan * { line-height: inherit; }
 /* Espacio reservado antes de que llegue el texto del panel: así el hero no "salta" al cargar (CLS) */
-.hero__kicker:empty { min-height: 1.4em; }
-.hero__title:empty { min-height: 1.84em; }
+.hero__kicker:empty { min-height: 18px; }
+.hero__title:empty { min-height: 1.8em; }
 .hero__slogan:empty { min-height: 1.35em; }
 .hero__title em, .contact__title em {  color: var(--accent); }
 .hero__slogan { font: 400 clamp(18px, 2vw, 26px)/1.35 var(--f-display); color: var(--ink-dim); margin: 0 0 36px; max-width: 34ch; }
@@ -882,6 +893,8 @@ html[data-theme="light"] .spotlight {
   border-radius: 100px; background: rgba(10,9,8,.35); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(8px);
   color: #fff; max-width: 100%; transition: border-color .3s, background .3s;
 }
+/* Mientras llega el estreno, el chip ocupa su lugar (invisible) para que el hero no salte al aparecer (CLS) */
+.hero__release[hidden] { display: inline-flex; visibility: hidden; }
 .hero__release:hover { border-color: #fff; background: rgba(10,9,8,.55); }
 .hero__release-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 100px; background: #fff; color: #0a0908; font-size: 10px; }
 .hero__release-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); animation: blink 1.2s steps(2) infinite; }

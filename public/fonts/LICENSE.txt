@@ -1,0 +1,6 @@
+Fuentes incluidas (alojadas en el propio sitio para cargar más rápido):
+  · Inter Tight — © The Inter Tight Project Authors — SIL Open Font License 1.1
+  · Instrument Sans — © The Instrument Sans Project Authors — SIL Open Font License 1.1
+  · JetBrains Mono — © The JetBrains Mono Project Authors — SIL Open Font License 1.1
+Licencia completa: https://openfontlicense.org
+Archivos obtenidos de los paquetes @fontsource (npm), subconjunto "latin".
