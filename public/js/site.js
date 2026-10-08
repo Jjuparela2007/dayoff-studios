@@ -163,10 +163,11 @@
           const ZOOM_AT = 2.45, ZOOM_DUR = 1.5;
           const tl = gsap.timeline({ onComplete: () => { done(); resolve(); } });
           clearTimeout(this.callTimer);
-          tl.to({}, { duration: .45 })                                // se lee "Marker"…
-            .call(() => this.showCall(this.CALLS.length - 1))         // …y ¡Action!
-            .to({}, { duration: .55 })
-            .to('.preloader__leader, .preloader__progress, .preloader__meta', { opacity: 0, scale: .96, duration: .5, ease: 'power2.in' })
+          // Sin pausas muertas: al terminar el "1" entra ¡Action! y el número sale de inmediato con un golpe
+          // (como el corte de la claqueta), mientras la cuenta regresiva se desvanece.
+          tl.call(() => this.showCall(this.CALLS.length - 1))
+            .to('.preloader__count', { scale: 1.35, opacity: 0, duration: .45, ease: 'power3.in' }, 0)
+            .to('.preloader__leader, .preloader__progress, .preloader__meta', { opacity: 0, scale: .96, duration: .4, ease: 'power2.in' }, .2)
             .call(() => el.classList.add('is-masking'))
             .call(() => onShow(ZOOM_AT + ZOOM_DUR * .75))          // el video empieza a verse dentro del logo
             .to(st, { o: 1, line: .55, s: s0, duration: 1.1, ease: 'power3.out', onUpdate: paint })
