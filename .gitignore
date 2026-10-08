@@ -10,6 +10,5 @@ uploads/*
 *.pem
 .vercel
 
-# Clips de demostración (solo local) y videos fuente
-public/media/showreel-*
+# Videos fuente para npm run demo:clips (los clips generados en public/media SÍ se suben)
 media-sources/

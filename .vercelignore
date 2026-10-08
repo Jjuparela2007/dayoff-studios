@@ -6,5 +6,4 @@ uploads/
 !.env.production.example
 *.pem
 *.log
-public/media/showreel-*
 media-sources/
