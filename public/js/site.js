@@ -538,7 +538,7 @@
     if (!list.length) list = state.projects.slice(0, 4);
     const cat = (id) => state.categories.find((c) => c.id === id)?.name || '';
     $('.featured__track').innerHTML = list.map((p, i) => `
-      <article class="feat" data-slug="${esc(p.slug)}" tabindex="0">
+      <a class="feat" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}">
         <img src="${esc(safeUrl(p.backdrop_url) || safeUrl(p.poster_url))}" alt="${esc(p.title)}" loading="lazy">
         <div class="feat__info">
           <div>
@@ -548,7 +548,7 @@
           </div>
           <span class="feat__idx">${String(i + 1).padStart(2, '0')}</span>
         </div>
-      </article>`).join('');
+      </a>`).join('');
     if (!list.length) $('#featured').hidden = true;
   }
 
@@ -648,7 +648,7 @@
     const list = state.filter === 'all' ? state.projects : state.projects.filter((p) => cat && p.category_id === cat.id);
     const catName = (id) => state.categories.find((c) => c.id === id)?.name || '';
     $('.grid').innerHTML = list.length ? list.map((p) => `
-      <article class="card" data-slug="${esc(p.slug)}" tabindex="0" role="button" aria-label="View ${esc(p.title)}">
+      <a class="card" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}">
         <div class="card__frame">
           <img src="${esc(safeUrl(p.poster_url))}" alt="${esc(p.title)} poster" loading="lazy" draggable="false">
           ${p.year ? `<span class="card__year mono">${esc(p.year)}</span>` : ''}
@@ -658,7 +658,7 @@
           <h3 class="card__title">${esc(p.title)}</h3>
           <span class="card__cat mono">${esc(catName(p.category_id))}</span>
         </div>
-      </article>`).join('') : '<p class="grid__empty">New work in this category coming soon.</p>';
+      </a>`).join('') : '<p class="grid__empty">New work in this category coming soon.</p>';
 
     cardPreviews();
     if (ANIM) {
@@ -976,13 +976,19 @@
       requestAnimationFrame(tick);
     })();
 
-    // Abrir fichas (delegación de eventos para tarjetas y destacados)
+    // Abrir fichas (delegación de eventos para tarjetas y destacados).
+    // Las tarjetas son enlaces reales (<a href="/project/…">): accesibles, indexables por Google y se pueden
+    // abrir en otra pestaña con Ctrl/Cmd+clic o clic central; el clic normal abre la ficha con la transición.
     document.addEventListener('click', (e) => {
       const card = e.target.closest('[data-slug]');
-      if (card && !e.target.closest('.detail')) openProject(card.dataset.slug);
+      if (!card || e.target.closest('.detail')) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      openProject(card.dataset.slug);
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.matches('[data-slug]')) openProject(e.target.dataset.slug);
+      // Los <a> ya abren con Enter (generan un clic); esto cubre cualquier otro elemento con data-slug
+      if (e.key === 'Enter' && e.target.matches('[data-slug]:not(a)')) openProject(e.target.dataset.slug);
     });
 
     // Botones magnéticos
@@ -1259,10 +1265,9 @@
     $('.slate-date', box).textContent = `${two(d.getMonth() + 1)}.${two(d.getDate())}.${String(d.getFullYear()).slice(2)}`;
     const first = s.founder_name.split(/\s+/)[0];
     $('.founder__link-label', box).textContent = 'Learn more about him';
-    $$('[data-founder-link]').forEach((a) => {
-      a.href = `/director/${founderSlug()}`;
-      a.setAttribute('aria-label', `Learn more about ${s.founder_name}`);
-    });
+    // El texto visible ("Learn more about him") es el nombre accesible del enlace; la foto es un atajo
+    // decorativo (oculto a lectores de pantalla y al tabulador) que lleva al mismo sitio
+    $$('[data-founder-link]').forEach((a) => { a.href = `/director/${founderSlug()}`; });
     document.addEventListener('click', (e) => {
       const a = e.target.closest('[data-founder-link]');
       if (!a || e.metaKey || e.ctrlKey) return;
