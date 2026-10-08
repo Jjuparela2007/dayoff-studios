@@ -675,7 +675,50 @@
    * y al salir se detiene y se retira. En pantallas táctiles no se activa.
    */
   const HOVER = matchMedia('(hover: hover) and (pointer: fine)');
+  /**
+   * Celular / tablet (sin cursor): la obra que pasa por el centro de la pantalla al hacer scroll se "activa"
+   * sola (pasa a color, barrido de luz, ícono de play) y, si tiene un video propio en su galería, lo reproduce
+   * sin sonido. Al salir del centro vuelve a blanco y negro. Los tráileres de YouTube/Vimeo no se cargan aquí
+   * (pesan mucho para datos móviles).
+   */
+  let touchIO = null;
+  function cardTouchActivation() {
+    if (touchIO) { touchIO.disconnect(); touchIO = null; }
+    if (HOVER.matches) return;
+    const cards = $$('.grid .card');
+    if (!cards.length) return;
+    const isFile = (u) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u) || /\/video\/upload\//.test(u);
+    const on = (card) => {
+      card.classList.add('is-active');
+      if (REDUCED || navigator.connection?.saveData) return;
+      const p = state.projects.find((x) => x.slug === card.dataset.slug);
+      const src = p && [safeUrl(p.preview_video), safeUrl(p.trailer_url)].find((u) => u && isFile(u));
+      if (!src) return;
+      let box = $('.card__preview', card);
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'card__preview';
+        box.setAttribute('aria-hidden', 'true');
+        const frame = $('.card__frame', card);
+        frame.insertBefore(box, $('.card__year', frame) || null);
+        backgroundTrailer(box, responsiveVideo(src, { max1080: true }));
+      }
+      box.classList.add('is-on');
+      $('video', box)?.play().catch(() => {});
+    };
+    const off = (card) => {
+      card.classList.remove('is-active');
+      const box = $('.card__preview', card);
+      if (box) { box.classList.remove('is-on'); $('video', box)?.pause(); }
+    };
+    // Franja central de la pantalla (35 %–65 % de alto): la obra que la cruza es la activa
+    touchIO = new IntersectionObserver((entries) => entries.forEach((en) => (en.isIntersecting ? on : off)(en.target)),
+      { rootMargin: '-35% 0px -35% 0px', threshold: 0 });
+    cards.forEach((c) => touchIO.observe(c));
+  }
+
   function cardPreviews() {
+    cardTouchActivation();
     if (REDUCED || !HOVER.matches || navigator.connection?.saveData) return;
     $$('.grid .card').forEach((card) => {
       const p = state.projects.find((x) => x.slug === card.dataset.slug);
