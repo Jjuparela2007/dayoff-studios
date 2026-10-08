@@ -6,6 +6,7 @@
  *  Proyectos    GET/POST /api/admin/projects        GET/PUT/DELETE /api/admin/projects/:id
  *  Créditos     PUT      /api/admin/projects/:id/credits   (reemplaza la lista completa)
  *  Galería      PUT      /api/admin/projects/:id/media     (reemplaza la lista completa)
+ *  News         GET/POST /api/admin/news    PUT/DELETE /api/admin/news/:id
  *  Personas     GET/POST /api/admin/people          PUT/DELETE /api/admin/people/:id
  *  Archivos     GET/POST /api/admin/uploads         DELETE /api/admin/uploads/:id
  *               GET /api/admin/uploads/config · GET /api/admin/uploads/signature · POST /api/admin/uploads/register (Cloudinary)
@@ -192,6 +193,43 @@ router.put('/projects/:id/media', asyncH(async (req, res) => {
     caption: m.caption || null,
     sort_order: i
   })));
+  res.json({ ok: true });
+}));
+
+/* ─────────────── News: prensa, premios, festivales y videos ─────────────── */
+
+const NEWS_FIELDS = ['kind', 'title', 'outlet', 'excerpt', 'url', 'image_url', 'video_url', 'project_id',
+  'published_at', 'featured', 'published', 'sort_order'];
+const NEWS_KINDS = ['press', 'award', 'festival', 'video'];
+const cleanNews = (body) => {
+  const d = pick(body, NEWS_FIELDS);
+  if (d.kind !== undefined && !NEWS_KINDS.includes(d.kind)) d.kind = 'press';
+  if (d.project_id !== undefined) d.project_id = d.project_id ? Number(d.project_id) || null : null;
+  if (d.published_at !== undefined && d.published_at && !/^\d{4}-\d{2}-\d{2}$/.test(d.published_at)) d.published_at = null;
+  return d;
+};
+
+router.get('/news', asyncH(async (req, res) => {
+  res.json(await query(`SELECT n.*, DATE_FORMAT(n.published_at, '%Y-%m-%d') AS published_at, p.title AS project_title FROM news n LEFT JOIN projects p ON p.id = n.project_id
+                         ORDER BY n.published_at IS NULL, n.published_at DESC, n.sort_order, n.id DESC`));
+}));
+
+router.post('/news', asyncH(async (req, res) => {
+  const data = cleanNews(req.body);
+  if (!data.title) return res.status(400).json({ error: 'El título es obligatorio' });
+  const { sql, values } = toSet(data);
+  const r = await query(`INSERT INTO news SET ${sql}`, values);
+  res.status(201).json({ id: r.insertId });
+}));
+
+router.put('/news/:id', asyncH(async (req, res) => {
+  const { sql, values } = toSet(cleanNews(req.body));
+  if (sql) await query(`UPDATE news SET ${sql} WHERE id = ?`, [...values, req.params.id]);
+  res.json({ ok: true });
+}));
+
+router.delete('/news/:id', asyncH(async (req, res) => {
+  await query('DELETE FROM news WHERE id = ?', [req.params.id]);
   res.json({ ok: true });
 }));
 

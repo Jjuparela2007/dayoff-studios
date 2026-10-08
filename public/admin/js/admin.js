@@ -368,6 +368,75 @@
     }));
   };
 
+  /* ═════════════ VISTA: News (prensa, premios, festivales, videos) ═════════════ */
+  const NEWS_KINDS = [
+    ['press', 'Prensa / artículo', 'Una nota o artículo donde mencionan a DayOff (pon el enlace a la nota)'],
+    ['award', 'Premio', 'Un premio ganado — se muestra con laurel, como en los pósters de cine'],
+    ['festival', 'Selección oficial / festival', 'Selección o nominación en un festival — también con laurel'],
+    ['video', 'Video / entrevista', 'Reportaje, entrevista o noticia en video (YouTube, Vimeo o archivo): se reproduce en el sitio']
+  ];
+  const kindName = (k) => (NEWS_KINDS.find((x) => x[0] === k) || NEWS_KINDS[0])[1];
+
+  views.news = async (id) => {
+    const [list, projects] = await Promise.all([api('/api/admin/news'), api('/api/admin/projects')]);
+    const editing = id === 'nueva' ? { kind: 'press', published: 1 } : list.find((n) => String(n.id) === id);
+
+    view.innerHTML = `
+      <div class="page-head"><div><h1>News</h1><p>Prensa, premios, festivales y videos donde aparece la marca. La sección "News" del sitio solo se muestra cuando hay al menos una publicada.</p></div>
+        <a class="btn btn--primary" href="#news/nueva">+ Nueva noticia</a></div>
+      ${editing ? `
+        <form class="panel" id="news-form">
+          <h2>${editing.id ? 'Editar' : 'Nueva'} noticia</h2>
+          <div class="form-grid">
+            <label>Tipo<select name="kind" id="news-kind">${NEWS_KINDS.map(([v, l]) => `<option value="${v}" ${editing.kind === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+              <span class="hint" id="news-kind-hint"></span></label>
+            <label>Fecha<input type="date" name="published_at" value="${esc(editing.published_at || '')}"></label>
+            <label class="span-all">Título — titular de la nota, nombre del premio (ej. "Best Short Film") o del video<input name="title" required value="${esc(editing.title)}"></label>
+            <label>Medio / festival / quien lo otorga (ej. "Variety", "Bogoshorts")<input name="outlet" value="${esc(editing.outlet)}"></label>
+            <label>Proyecto relacionado (opcional)<select name="project_id"><option value="">— Ninguno —</option>
+              ${projects.map((p) => `<option value="${p.id}" ${String(editing.project_id) === String(p.id) ? 'selected' : ''}>${esc(p.title)}</option>`).join('')}</select></label>
+            <label class="span-all">Resumen / cita corta (opcional)<textarea name="excerpt" rows="3">${esc(editing.excerpt)}</textarea></label>
+            <label class="span-all">Enlace a la nota o al premio (opcional)<input name="url" type="url" placeholder="https://…" value="${esc(editing.url)}"></label>
+            <label class="span-all">Video (YouTube, Vimeo o archivo .mp4) — para entrevistas o reportajes<input name="video_url" placeholder="https://www.youtube.com/watch?v=…" value="${esc(editing.video_url)}"></label>
+            ${urlField('image_url', 'Imagen (foto de la nota, del premio o del evento; para videos de YouTube se usa la miniatura si la dejas vacía)', editing.image_url)}
+            <label>Orden (si hay varias con la misma fecha)<input name="sort_order" type="number" value="${esc(editing.sort_order ?? 0)}"></label>
+            <label class="check"><input type="checkbox" name="published" ${+editing.published ? 'checked' : ''}> Publicada (visible en el sitio)</label>
+            <label class="check"><input type="checkbox" name="featured" ${+editing.featured ? 'checked' : ''}> Destacada (aparece primero y en grande)</label>
+          </div>
+          <div class="savebar"><a class="btn btn--ghost" href="#news">Cancelar</a><button class="btn btn--primary">Guardar</button></div>
+        </form>` : ''}
+      <div class="panel table-wrap"><table class="table">
+        <thead><tr><th></th><th>Título</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${list.map((n) => `<tr>
+          <td>${thumb(n.image_url, 'thumb thumb--wide')}</td>
+          <td><b>${esc(n.title)}</b><div class="hint">${esc(n.outlet || '')}${n.project_title ? ` · ${esc(n.project_title)}` : ''}</div></td>
+          <td>${esc(kindName(n.kind))}</td><td>${esc(n.published_at || '—')}</td>
+          <td>${+n.published ? '<span class="tag tag--ok">Publicada</span>' : '<span class="tag">Borrador</span>'}
+              ${+n.featured ? '<span class="tag tag--accent">Destacada</span>' : ''}</td>
+          <td><div class="actions"><a class="btn btn--ghost btn--sm" href="#news/${n.id}">Editar</a>
+            <button class="btn btn--danger btn--sm" data-del-news="${n.id}">Eliminar</button></div></td></tr>`).join('')
+          || '<tr><td colspan="6" class="empty">Aún no hay noticias. Agrega la primera con "+ Nueva noticia".</td></tr>'}</tbody></table></div>`;
+
+    const form = $('#news-form');
+    if (form) {
+      const kindSel = $('#news-kind'), hint = $('#news-kind-hint');
+      const showHint = () => { hint.textContent = (NEWS_KINDS.find((k) => k[0] === kindSel.value) || [])[2] || ''; };
+      kindSel.addEventListener('change', showHint); showHint();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ok = await run($('.btn--primary', form), () => editing.id
+          ? api(`/api/admin/news/${editing.id}`, { method: 'PUT', body: formData(form) })
+          : api('/api/admin/news', { method: 'POST', body: formData(form) }), 'Noticia guardada');
+        if (ok) location.hash = 'news';
+      });
+    }
+    $$('[data-del-news]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta noticia?')) return;
+      await run(b, () => api(`/api/admin/news/${b.dataset.delNews}`, { method: 'DELETE' }), 'Noticia eliminada');
+      location.hash = 'news'; route();
+    }));
+  };
+
   /* ═════════════ VISTA: Proyectos ═════════════ */
   function projectTable(list, spotlightId) {
     return `<div class="table-wrap"><table class="table">

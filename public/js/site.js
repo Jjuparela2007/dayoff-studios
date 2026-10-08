@@ -921,6 +921,18 @@
       gsap.to('.founder__portrait', { yPercent: -6, ease: 'none', scrollTrigger: { trigger: '.founder', start: 'top bottom', end: 'bottom top', scrub: true } });
     }
 
+    // News: los laureles "brotan", la nota destacada se revela y las filas suben una a una
+    if ($('#news') && !$('#news').hidden) {
+      const st = { trigger: '.news__laurels', start: 'top 82%' };
+      gsap.from('.laurel', { opacity: 0, y: 40, duration: 1, stagger: .12, ease: 'power3.out', scrollTrigger: st });
+      gsap.from('.laurel__branch', { scale: .3, opacity: 0, rotate: (i) => (i % 2 ? 28 : -28), svgOrigin: (i) => (i % 2 ? '168 190' : '122 190'), duration: 1.3, stagger: .06, ease: 'back.out(1.6)', scrollTrigger: st });
+      if (!$('.news__lead').hidden) {
+        gsap.fromTo('.news__lead-media', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 1.4, ease: 'power4.inOut', scrollTrigger: { trigger: '.news__lead', start: 'top 78%' } });
+        gsap.from('.news__lead-body > *', { opacity: 0, y: 30, duration: .9, stagger: .1, ease: 'power3.out', delay: .4, scrollTrigger: { trigger: '.news__lead', start: 'top 78%' } });
+      }
+      gsap.from('.news__list li:not([hidden])', { opacity: 0, y: 30, duration: .8, stagger: .07, ease: 'power3.out', scrollTrigger: { trigger: '.news__list', start: 'top 85%' } });
+    }
+
     // Contacto y footer
     gsap.from(splitWords($('.contact__title')), { yPercent: 110, duration: 1.2, stagger: .06, ease: 'power4.out', scrollTrigger: { trigger: '.contact', start: 'top 70%' } });
     gsap.from('.footer__brand, .footer__social', { y: 24, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.footer', start: 'top 95%' } });
@@ -1236,6 +1248,141 @@
     else closeProject({ push: false });
   });
 
+  /* ───────────────────────── News: prensa, premios, festivales, videos ─────────────────────────
+     · Premios y festivales → laureles como en los pósters de cine.
+     · La noticia "destacada" (que no sea premio) → bloque grande con imagen o video.
+     · El resto → lista editorial (fecha · medio · titular). Los videos se ven en el sitio (lightbox);
+       las notas abren el enlace en otra pestaña. Todo se administra en el panel → News. */
+  const ytId = (u) => (String(u || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/) || [])[1];
+  const newsThumb = (n) => safeUrl(n.image_url) || (ytId(n.video_url) ? `https://img.youtube.com/vi/${ytId(n.video_url)}/hqdefault.jpg` : '');
+  const newsDate = (d) => {
+    if (!d) return '';
+    const [y, m, day] = String(d).split('-').map(Number);
+    return new Date(Date.UTC(y, (m || 1) - 1, day || 1)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  };
+  let laurelCache = '';
+  /** Rama de laurel dibujada con hojas a lo largo de una curva (izquierda + su reflejo a la derecha). */
+  function laurelSVG() {
+    if (laurelCache) return laurelCache;
+    const P0 = { x: 122, y: 190 }, C = { x: 18, y: 150 }, P2 = { x: 60, y: 18 };
+    const q = (t) => ({ x: (1 - t) ** 2 * P0.x + 2 * (1 - t) * t * C.x + t * t * P2.x, y: (1 - t) ** 2 * P0.y + 2 * (1 - t) * t * C.y + t * t * P2.y });
+    const dv = (t) => ({ x: 2 * (1 - t) * (C.x - P0.x) + 2 * t * (P2.x - C.x), y: 2 * (1 - t) * (C.y - P0.y) + 2 * t * (P2.y - C.y) });
+    const f = (n) => n.toFixed(1);
+    let leaves = '';
+    for (let i = 0; i < 10; i++) {
+      const t = .07 + i * .095, p = q(t), v = dv(t), len = Math.hypot(v.x, v.y), ux = v.x / len, uy = v.y / len;
+      const L = 24 - i * 1.15, W = 6.8 - i * .3;
+      for (const side of [1, -1]) {
+        const a = side * .78, dx = ux * Math.cos(a) - uy * Math.sin(a), dy = ux * Math.sin(a) + uy * Math.cos(a);
+        const tip = { x: p.x + dx * L, y: p.y + dy * L }, m = { x: p.x + dx * L / 2, y: p.y + dy * L / 2 };
+        leaves += `M${f(p.x)},${f(p.y)}Q${f(m.x - dy * W)},${f(m.y + dx * W)} ${f(tip.x)},${f(tip.y)}Q${f(m.x + dy * W)},${f(m.y - dx * W)} ${f(p.x)},${f(p.y)}Z`;
+      }
+    }
+    // hoja final en la punta
+    leaves += `M${P2.x},${P2.y}Q${P2.x - 9},${P2.y - 12} ${P2.x + 2},${P2.y - 24}Q${P2.x + 8},${P2.y - 10} ${P2.x},${P2.y}Z`;
+    const branch = `<path class="laurel__stem" d="M${P0.x},${P0.y}Q${C.x},${C.y} ${P2.x},${P2.y}" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="${leaves}"/>`;
+    laurelCache = `<svg viewBox="0 0 290 200" aria-hidden="true"><g class="laurel__branch"><g>${branch}</g></g><g class="laurel__branch"><g transform="translate(290 0) scale(-1 1)">${branch}</g></g></svg>`;
+    return laurelCache;
+  }
+
+  function renderNews() {
+    const sec = $('#news');
+    const all = (state.news || []).filter((n) => n && n.title);
+    if (!sec) return;
+    sec.hidden = !all.length;
+    $$('.nav__news').forEach((a) => { a.hidden = !all.length; });
+    if (!all.length) return;
+
+    // 1) Laureles: premios y festivales
+    const laurels = all.filter((n) => n.kind === 'award' || n.kind === 'festival');
+    $('.news__laurels', sec).innerHTML = laurels.map((n) => {
+      const tag = n.url ? 'a' : 'div';
+      const attrs = n.url ? ` href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener"` : '';
+      const year = (n.published_at || '').slice(0, 4);
+      return `<${tag} class="laurel" role="listitem"${attrs}>${laurelSVG()}
+        <span class="laurel__txt">
+          <span class="laurel__kind">${n.kind === 'award' ? 'Winner' : 'Official Selection'}</span>
+          <span class="laurel__title">${esc(n.title)}</span>
+          <span class="laurel__by">${esc([n.outlet, year].filter(Boolean).join(' · '))}</span>
+        </span></${tag}>`;
+    }).join('');
+
+    // 2) Destacada (prensa o video marcado como "Destacada")
+    const rest = all.filter((n) => !laurels.includes(n));
+    const lead = rest.find((n) => +n.featured);
+    const leadBox = $('.news__lead', sec);
+    leadBox.hidden = !lead;
+    if (lead) {
+      const img = newsThumb(lead), video = safeUrl(lead.video_url), link = safeUrl(lead.url);
+      leadBox.innerHTML = `
+        ${video ? `<button type="button" class="news__lead-media" data-news-video="${esc(video)}" aria-label="Watch: ${esc(lead.title)}">`
+                : `<a class="news__lead-media" ${link ? `href="${esc(link)}" target="_blank" rel="noopener"` : ''} aria-label="${esc(lead.title)}">`}
+          ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}
+          ${video ? `<span class="news__play">${PLAY_ICON}</span>` : ''}
+        ${video ? '</button>' : '</a>'}
+        <div class="news__lead-body">
+          <p class="news__lead-meta mono">${esc(lead.outlet || (lead.kind === 'video' ? 'Video' : 'Press'))}<span>${esc(newsDate(lead.published_at))}</span></p>
+          <h3>${esc(lead.title)}</h3>
+          ${lead.excerpt ? `<blockquote>${esc(lead.excerpt)}</blockquote>` : ''}
+          ${video ? `<button type="button" class="news__go" data-news-video="${esc(video)}">Watch <i>▶</i></button>`
+                  : link ? `<a class="news__go" href="${esc(link)}" target="_blank" rel="noopener">Read the article <i>↗</i></a>` : ''}
+        </div>`;
+    }
+
+    // 3) Lista: el resto, con "Show more" a partir de 8
+    const items = rest.filter((n) => n !== lead);
+    const row = (n, i) => {
+      const video = safeUrl(n.video_url), link = safeUrl(n.url), img = newsThumb(n);
+      const inner = `${img ? `<img class="news-row__thumb" src="${esc(img)}" alt="" loading="lazy">` : ''}
+        <span class="news-row__date">${esc(newsDate(n.published_at))}</span>
+        <span class="news-row__outlet">${esc(n.outlet || '')}</span>
+        <span class="news-row__title">${esc(n.title)}</span>
+        <span class="news-row__kind">${video ? 'Watch' : link ? 'Read' : n.project_slug ? 'Project' : ''}<i>${video ? '▶' : '↗'}</i></span>`;
+      const common = `class="news-row" data-img="${esc(img)}"`;
+      const el = video ? `<button type="button" ${common} data-news-video="${esc(video)}">${inner}</button>`
+        : link ? `<a ${common} href="${esc(link)}" target="_blank" rel="noopener">${inner}</a>`
+        : n.project_slug ? `<a ${common} href="/project/${esc(n.project_slug)}" data-slug="${esc(n.project_slug)}">${inner}</a>`
+        : `<div ${common}>${inner}</div>`;
+      return `<li${i >= 8 ? ' hidden' : ''}>${el}</li>`;
+    };
+    $('.news__list', sec).innerHTML = items.map(row).join('');
+    const more = $('.news__more', sec);
+    more.hidden = items.length <= 8;
+    more.onclick = () => {
+      $$('.news__list li[hidden]', sec).forEach((li) => { li.hidden = false; });
+      more.hidden = true;
+      if (ANIM) gsap.from($$('.news__list li', sec).slice(8), { opacity: 0, y: 24, duration: .7, stagger: .05, ease: 'power3.out' });
+      ST && ST.refresh();
+    };
+
+    // Videos: se ven aquí mismo (lightbox con sonido y controles)
+    if (!sec.dataset.bound) {
+      sec.dataset.bound = '1';
+      sec.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-news-video]');
+        if (b) { e.preventDefault(); openTrailer(b.dataset.newsVideo); }
+      });
+      // Imagen que sigue al cursor sobre la lista (escritorio)
+      const pv = $('.news__preview', sec), pimg = $('img', pv), list = $('.news__list', sec);
+      if (ANIM && HOVER.matches) {
+        const xTo = gsap.quickTo(pv, 'x', { duration: .5, ease: 'power3' }), yTo = gsap.quickTo(pv, 'y', { duration: .5, ease: 'power3' });
+        let on = false;
+        const hide = () => { if (on) { on = false; gsap.to(pv, { opacity: 0, scale: .85, duration: .25, overwrite: true }); } };
+        list.addEventListener('mousemove', (e) => {
+          const r = e.target.closest('.news-row');
+          if (!on) gsap.set(pv, { x: e.clientX, y: e.clientY });
+          xTo(e.clientX); yTo(e.clientY);
+          if (r && r.dataset.img) {
+            if (pimg.getAttribute('src') !== r.dataset.img) pimg.src = r.dataset.img;
+            if (!on) { on = true; gsap.to(pv, { opacity: 1, scale: 1, rotate: gsap.utils.random(-4, 4), duration: .45, ease: 'power3.out', overwrite: true }); }
+          } else hide();
+        });
+        list.addEventListener('mouseleave', hide);
+        addEventListener('scroll', hide, { passive: true });
+      }
+    }
+  }
+
   /* ───────────────────────── Fundador ─────────────────────────
      Bloque protagonista dentro de "The studio" + página propia en /director/nombre-apellido.
      Los textos se editan en el panel → Textos del sitio → "Fundador / creador". */
@@ -1514,6 +1661,7 @@
       renderFilters();
       renderGrid();
       renderFounder();
+      renderNews();
       await Promise.race([
         Promise.all([
           heroReel.ready(), // primer video listo para reproducirse

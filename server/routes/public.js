@@ -51,8 +51,16 @@ router.get('/site', asyncH(async (req, res) => {
         WHERE cr.project_id = ? ORDER BY cr.department, cr.sort_order, cr.id`, [spotlight.id]);
   }
 
+  // News (prensa, premios, festivales, videos): los publicados, primero los destacados y luego por fecha
+  const news = await query(
+    `SELECT n.id, n.kind, n.title, n.outlet, n.excerpt, n.url, n.image_url, n.video_url, DATE_FORMAT(n.published_at, '%Y-%m-%d') AS published_at, n.featured,
+            p.slug AS project_slug, p.title AS project_title
+       FROM news n LEFT JOIN projects p ON p.id = n.project_id AND p.published = 1
+      WHERE n.published = 1
+      ORDER BY n.featured DESC, n.published_at IS NULL, n.published_at DESC, n.sort_order, n.id DESC LIMIT 60`).catch(() => []);
+
   res.set('Cache-Control', 'no-cache');   // siempre se revisa: lo que guardes en el panel se ve al recargar (F5)
-  res.json({ settings, categories, projects, spotlight: spotlight || null });
+  res.json({ settings, categories, projects, spotlight: spotlight || null, news });
 }));
 
 router.get('/projects/:slug', asyncH(async (req, res) => {

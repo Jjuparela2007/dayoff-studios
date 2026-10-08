@@ -63,6 +63,7 @@
       <a href="#categories">Categories</a>
       <a href="#work">Work</a>
       <a href="#studio">Studio</a>
+      <a href="#news" class="nav__news" hidden>News</a>
       <a href="#contact">Contact</a>
     </nav>
     <!-- Botón modo claro / oscuro -->
@@ -247,6 +248,20 @@
     </section>
 
     <!-- ═══════════ CONTACTO ═══════════ -->
+    <!-- ═══════════ NEWS: prensa, premios, festivales y videos (panel → News) ═══════════ -->
+    <section class="news" id="news" hidden>
+      <header class="section-head">
+        <span class="mono section-head__num">05</span>
+        <h2 class="section-title" data-reveal>News</h2>
+        <p class="news__kicker mono">Press · Awards · Festivals</p>
+      </header>
+      <div class="news__laurels" role="list"></div>
+      <article class="news__lead" hidden></article>
+      <ol class="news__list"></ol>
+      <button class="news__more btn-ghost" type="button" hidden><span>Show more</span></button>
+      <div class="news__preview" aria-hidden="true"><img alt=""></div>
+    </section>
+
     <section class="contact" id="contact">
       <p class="mono contact__kicker">Final scene</p>
       <h2 class="contact__title" data-setting="contact_title" data-split></h2>

@@ -344,6 +344,74 @@ html[data-theme="light"] .about__mask-text { color: #000; }
   .stats span { color: var(--ink-dim); }
 }
 
+/* ── News: premios con laurel, nota destacada y lista de prensa ── */
+.news { padding: clamp(90px, 11vw, 170px) 0 clamp(60px, 8vw, 120px); position: relative; }
+.news .section-head { flex-wrap: wrap; }
+.news__kicker { margin: 0 0 0 auto; align-self: center; color: var(--ink-faint); letter-spacing: .2em; text-transform: uppercase; font-size: 11px; }
+/* Laureles (como los de los pósters de festival) */
+.news__laurels { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(18px, 3vw, 46px) clamp(14px, 3vw, 56px); padding: 0 var(--gutter); margin-bottom: clamp(60px, 8vw, 120px); }
+.news__laurels:empty { display: none; }
+.laurel { position: relative; display: grid; place-items: center; width: clamp(220px, 21vw, 300px); aspect-ratio: 1.38; color: var(--ink); text-align: center; text-decoration: none; }
+.laurel svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.laurel svg path { fill: currentColor; }
+.laurel svg .laurel__stem { fill: none; }
+.laurel__txt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; max-width: 50%; }
+.laurel__kind { font: 500 9px var(--f-mono); letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+.laurel__title { font: 500 clamp(15px, 1.25vw, 19px)/1.1 var(--f-display); letter-spacing: -.02em; }
+.laurel__by { font: 400 8.5px/1.35 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); }
+a.laurel { transition: transform .5s var(--ease-out); }
+a.laurel:hover { transform: translateY(-4px); }
+a.laurel:hover .laurel__title { color: var(--accent); }
+/* Nota destacada */
+.news__lead { display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(26px, 5vw, 80px); align-items: center; padding: 0 var(--gutter); margin-bottom: clamp(50px, 7vw, 100px); }
+.news__lead[hidden] { display: none; }
+.news__lead-media { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 2px; background: var(--bg-2); }
+.news__lead-media img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.04); filter: grayscale(.35); transition: transform 1.2s var(--ease-out), filter .8s; }
+.news__lead-media:hover img { transform: scale(1); filter: none; }
+.news__play { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; translate: -50% -50%; border-radius: 50%; display: grid; place-items: center; background: rgba(10,9,8,.55); border: 1px solid rgba(255,255,255,.6); backdrop-filter: blur(6px); transition: scale .5s var(--ease-out); }
+.news__play svg { width: 20px; fill: #fff; margin-left: 4px; }
+.news__lead-media:hover .news__play { scale: 1.1; }
+.news__lead-meta { display: flex; gap: 14px; align-items: center; margin: 0 0 18px; color: var(--accent); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
+.news__lead-meta span { color: var(--ink-faint); }
+.news__lead h3 { margin: 0; font: 500 clamp(28px, 3.4vw, 54px)/1.02 var(--f-display); letter-spacing: -.035em; }
+.news__lead blockquote { margin: 22px 0 0; padding-left: 20px; border-left: 1px solid var(--accent); color: var(--ink-dim); font: 300 clamp(17px, 1.4vw, 21px)/1.5 var(--f-display); max-width: 46ch; }
+.news__lead .news__go { margin-top: 28px; }
+.news__go { display: inline-flex; align-items: center; gap: 12px; font: 500 11px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+.news__go i { font-style: normal; transition: translate .5s var(--ease-out); }
+.news__go:hover i { translate: 4px -4px; }
+/* Lista de prensa */
+.news__list { list-style: none; margin: 0; padding: 0 var(--gutter); }
+.news__list li { position: relative; border-top: 1px solid var(--line); }
+.news__list li:last-child { border-bottom: 1px solid var(--line); }
+.news-row { display: grid; grid-template-columns: 110px 190px 1fr auto; gap: 24px; align-items: baseline; padding: clamp(18px, 2vw, 28px) 0; color: inherit; cursor: pointer; width: 100%; text-align: left; transition: padding .6s var(--ease-out); }
+.news-row:hover { padding-left: clamp(8px, 1.2vw, 18px); }
+.news-row__date, .news-row__outlet, .news-row__kind { font: 400 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.news-row__date { color: var(--ink-faint); }
+.news-row__outlet { color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.news-row__title { font: 500 clamp(19px, 1.9vw, 30px)/1.15 var(--f-display); letter-spacing: -.025em; transition: color .4s; }
+.news-row:hover .news-row__title { color: var(--accent); }
+.news-row__kind { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-dim); white-space: nowrap; }
+.news-row__kind i { font-style: normal; display: inline-grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; transition: background .4s, color .4s, border-color .4s; }
+.news-row:hover .news-row__kind i { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.news-row__thumb { display: none; }
+.news__more { display: flex; margin: 34px auto 0; }
+.news__more[hidden] { display: none; }
+.news__preview { position: fixed; z-index: 50; top: 0; left: 0; width: 300px; aspect-ratio: 16 / 10; pointer-events: none; opacity: 0; translate: -50% -50%; overflow: hidden; border-radius: 2px; box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+.news__preview img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 860px) {
+  .news__kicker { margin: 8px 0 0; flex-basis: 100%; }
+  .news__lead { grid-template-columns: 1fr; }
+  .news-row { grid-template-columns: 76px 1fr; gap: 6px 16px; align-items: start; }
+  .news-row__thumb { display: block; grid-row: span 3; width: 76px; aspect-ratio: 1; object-fit: cover; border-radius: 2px; background: var(--bg-2); }
+  .news-row__date { order: 2; } .news-row__outlet { order: 1; } .news-row__title { order: 3; grid-column: 2; } .news-row__kind { display: none; }
+  .news__preview { display: none; }
+  .news__laurels { gap: 10px 4px; }
+  .laurel { width: calc(50% - 4px); }
+  .laurel__title { font-size: 13px; }
+  .laurel__kind { font-size: 7.5px; letter-spacing: .16em; }
+  .laurel__by { font-size: 7px; }
+}
+
 /* ── Fundador (dentro de "The studio") ── */
 .founder {
   grid-column: 1 / -1; display: grid; grid-template-columns: minmax(220px, .75fr) 1.25fr; gap: clamp(40px, 7vw, 120px);

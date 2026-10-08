@@ -105,3 +105,22 @@ CREATE TABLE IF NOT EXISTS project_slugs (
   project_id INT UNSIGNED NOT NULL,
   CONSTRAINT fk_slug_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- News: prensa, premios, festivales y videos donde aparece la marca (sección "News" del sitio)
+CREATE TABLE IF NOT EXISTS news (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  kind         ENUM('press','award','festival','video') NOT NULL DEFAULT 'press',
+  title        VARCHAR(300) NOT NULL,
+  outlet       VARCHAR(200),
+  excerpt      TEXT,
+  url          VARCHAR(500),
+  image_url    VARCHAR(500),
+  video_url    VARCHAR(500),
+  project_id   INT UNSIGNED NULL,
+  published_at DATE,
+  featured     TINYINT(1) DEFAULT 0,
+  published    TINYINT(1) DEFAULT 1,
+  sort_order   INT DEFAULT 0,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_news_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -20,7 +20,8 @@
     "db:contact": "node server/scripts/set-contact.js",
     "prod:db:contact": "node server/scripts/set-contact.js --env .env.production",
     "demo:clips": "node server/scripts/demo-clips.js",
-    "demo:gallery": "node server/scripts/demo-gallery-videos.js"
+    "demo:gallery": "node server/scripts/demo-gallery-videos.js",
+    "demo:news": "node server/scripts/demo-news.js"
   },
   "engines": {
     "node": ">=18"
