@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server/server.js",
+    "railway:start": "node server/scripts/init-db.js && node server/scripts/first-run.js && node server/scripts/update-db.js && node server/server.js",
     "dev": "node --watch server/server.js",
     "db:init": "node server/scripts/init-db.js",
     "db:seed": "node server/scripts/seed.js",

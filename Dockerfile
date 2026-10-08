@@ -6,4 +6,5 @@ RUN npm ci --omit=dev
 COPY . .
 RUN mkdir -p uploads
 EXPOSE 3000
-CMD ["sh", "-c", "npm run db:init && npm start"]
+# Al arrancar: crea/verifica tablas, primer administrador y ajustes nuevos (sin borrar nada) y levanta el sitio
+CMD ["npm", "run", "railway:start"]

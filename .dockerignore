@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+*.pem
+uploads/*
+media-sources
+public/media/showreel-*
+.vercel

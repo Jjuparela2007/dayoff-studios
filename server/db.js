@@ -6,6 +6,9 @@
  *   DB_SSL=true            → conexión cifrada
  *   DB_SSL_CA="-----BEGIN CERTIFICATE-----…"   → contenido del certificado CA (recomendado en Vercel)
  *   DB_SSL_CA_FILE=ca.pem  → o la ruta al archivo del certificado (cómodo en local)
+ *
+ * Railway: basta con una variable  DATABASE_URL=${{MySQL.MYSQL_URL}}  (mysql://usuario:clave@host:puerto/base);
+ * si existe, tiene prioridad sobre DB_HOST / DB_USER / …
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +25,20 @@ function sslConfig() {
 
 /** Datos de conexión (también los usa init-db.js). */
 function connectionConfig(extra = {}) {
+  const url = process.env.DATABASE_URL || process.env.MYSQL_URL;
+  if (url) {
+    const u = new URL(url);
+    return {
+      host: u.hostname,
+      port: Number(u.port || 3306),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: decodeURIComponent(u.pathname.replace(/^\//, '')),
+      charset: 'utf8mb4',
+      ssl: sslConfig(),
+      ...extra
+    };
+  }
   return {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
