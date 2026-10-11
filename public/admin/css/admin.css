@@ -59,6 +59,13 @@ input[type="checkbox"] { width: auto; accent-color: var(--accent); }
 .login__error { color: #f0a090; margin: 0; min-height: 1.2em; font-size: 13px; }
 .login__back { color: var(--ink-faint); font-size: 12px; text-align: center; text-decoration: none; }
 
+/* Campo de contraseña con ojito (mostrar/ocultar) */
+.pw { position: relative; display: block; }
+.pw input { padding-right: 46px; }
+.pw__toggle { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--ink-dim); cursor: pointer; transition: color .2s, background .2s; }
+.pw__toggle:hover { color: var(--ink); background: var(--bg-4); }
+.pw__toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 /* ── Layout ── */
 .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
 .side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 30px; padding: 24px 18px; border-right: 1px solid var(--line); background: var(--bg-2); }
@@ -114,17 +121,11 @@ input[type="checkbox"] { width: auto; accent-color: var(--accent); }
 .row { display: grid; gap: 8px; align-items: center; background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--r); padding: 8px; }
 .row--credit { grid-template-columns: 24px 140px 1.2fr 1fr auto; }
 .row--media { grid-template-columns: 24px 70px 100px 1.6fr 1fr auto; }
-.row--clip { grid-template-columns: 24px 132px 1fr auto auto; align-items: center; }
-.row--clip .preview { width: 132px; height: 74px; display: grid; place-items: center; font-size: 12px; color: var(--ink-dim); }
-.row--clip .check { white-space: nowrap; }
-.clip-fields { display: grid; gap: 8px; min-width: 0; }
-.clip-url { display: flex; gap: 8px; }
-.clip-url input { flex: 1; min-width: 0; }
 .row input, .row select { background: var(--bg-2); padding: 8px 10px; }
 .row .preview { width: 70px; height: 44px; object-fit: cover; border-radius: 4px; background: var(--bg-4); }
 .handle { cursor: grab; color: var(--ink-faint); text-align: center; user-select: none; }
 .row.is-dragging { opacity: .4; }
-@media (max-width: 900px) { .row--credit, .row--media, .row--clip { grid-template-columns: 1fr; } .handle { display: none; } }
+@media (max-width: 900px) { .row--credit, .row--media { grid-template-columns: 1fr; } .handle { display: none; } }
 
 /* ── Biblioteca de medios ── */
 .dropzone { border: 1.5px dashed var(--line); border-radius: 12px; padding: 34px; text-align: center; color: var(--ink-dim); transition: .2s; cursor: pointer; margin-bottom: 20px; }
