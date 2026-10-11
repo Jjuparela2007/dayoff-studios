@@ -60,7 +60,7 @@
     </a>
     <nav class="nav" aria-label="Main">
       <a href="#latest" class="nav__latest" hidden><i></i>Latest release</a>
-      <a href="#categories">Categories</a>
+      <a href="#onset" class="nav__onset" hidden>On set</a>
       <a href="#work">Work</a>
       <a href="#studio">Studio</a>
       <a href="#news" class="nav__news" hidden>News</a>
@@ -163,14 +163,19 @@
       </div>
     </section>
 
-    <!-- ═══════════ CATEGORÍAS ═══════════ -->
-    <section class="categories" id="categories">
-      <header class="section-head">
+    <!-- ═══════════ ON SET (galería del estudio: rodajes y detrás de cámaras, se edita en el panel) ═══════════ -->
+    <section class="onset" id="onset" hidden>
+      <header class="section-head onset__head">
         <span class="mono section-head__num">02</span>
-        <h2 class="section-title" data-reveal>Categories</h2>
+        <h2 class="section-title" data-reveal>On Set</h2>
+        <p class="onset__lede">Behind the camera — moments from our shoots.</p>
       </header>
-      <ul class="cat-list"></ul>
-      <div class="cat-preview" aria-hidden="true"><img alt=""></div>
+      <div class="onset__sheet">
+        <div class="onset__strip mono" aria-hidden="true"><span>DAYOFF STUDIOS</span><span class="onset__strip-roll">ROLL A · 35MM</span></div>
+        <div class="onset__grid"></div>
+        <div class="onset__strip mono" aria-hidden="true"><span class="onset__strip-roll">KODAK VISION3 500T</span><span class="onset__total"></span></div>
+      </div>
+      <button type="button" class="btn-ghost onset__more" hidden><span>Show all photos</span></button>
     </section>
 
     <!-- ═══════════ OBRAS (galería filtrable) ═══════════ -->

@@ -7,6 +7,7 @@
  *  Créditos     PUT      /api/admin/projects/:id/credits   (reemplaza la lista completa)
  *  Galería      PUT      /api/admin/projects/:id/media     (reemplaza la lista completa)
  *  News         GET/POST /api/admin/news    PUT/DELETE /api/admin/news/:id
+ *  Galería del estudio  GET/PUT /api/admin/studio-photos  (PUT reemplaza la lista completa)
  *  Personas     GET/POST /api/admin/people          PUT/DELETE /api/admin/people/:id
  *  Archivos     GET/POST /api/admin/uploads         DELETE /api/admin/uploads/:id
  *               GET /api/admin/uploads/config · GET /api/admin/uploads/signature · POST /api/admin/uploads/register (Cloudinary)
@@ -231,6 +232,34 @@ router.put('/news/:id', asyncH(async (req, res) => {
 router.delete('/news/:id', asyncH(async (req, res) => {
   await query('DELETE FROM news WHERE id = ?', [req.params.id]);
   res.json({ ok: true });
+}));
+
+/* ─────────────── Galería del estudio ("On set": rodajes, detrás de cámaras) ─────────────── */
+
+router.get('/studio-photos', asyncH(async (req, res) => {
+  res.json(await query('SELECT * FROM studio_photos ORDER BY sort_order, id'));
+}));
+
+// Reemplaza la lista completa (mismo orden en que llegan)
+router.put('/studio-photos', asyncH(async (req, res) => {
+  const list = (Array.isArray(req.body) ? req.body : [])
+    .map((r) => ({
+      url: String(r.url || '').trim().slice(0, 500),
+      caption: String(r.caption || '').trim().slice(0, 300) || null,
+      published: +r.published ? 1 : 0
+    }))
+    .filter((r) => /^(\/uploads\/|\/media\/|https:\/\/)/i.test(r.url))
+    .slice(0, 200);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute('DELETE FROM studio_photos');
+    for (const [i, r] of list.entries()) {
+      await conn.execute('INSERT INTO studio_photos (url, caption, published, sort_order) VALUES (?, ?, ?, ?)', [r.url, r.caption, r.published, i]);
+    }
+    await conn.commit();
+  } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
+  res.json({ ok: true, count: list.length });
 }));
 
 /* ─────────────── Personas (actores, artistas, equipo) ─────────────── */

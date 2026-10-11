@@ -59,8 +59,11 @@ router.get('/site', asyncH(async (req, res) => {
       WHERE n.published = 1
       ORDER BY n.featured DESC, n.published_at IS NULL, n.published_at DESC, n.sort_order, n.id DESC LIMIT 60`).catch(() => []);
 
+  // Galería del estudio ("On set"): fotos publicadas, en el orden del panel
+  const photos = await query('SELECT id, url, caption FROM studio_photos WHERE published = 1 ORDER BY sort_order, id LIMIT 60').catch(() => []);
+
   res.set('Cache-Control', 'no-cache');   // siempre se revisa: lo que guardes en el panel se ve al recargar (F5)
-  res.json({ settings, categories, projects, spotlight: spotlight || null, news });
+  res.json({ settings, categories, projects, spotlight: spotlight || null, news, photos });
 }));
 
 router.get('/projects/:slug', asyncH(async (req, res) => {

@@ -437,6 +437,66 @@
     }));
   };
 
+  /* ═════════════ VISTA: Galería del estudio ("On set" en el sitio) ═════════════ */
+  views.galeria = async () => {
+    const list = await api('/api/admin/studio-photos');
+    view.innerHTML = `
+      <div class="page-head"><div><h1>Galería del estudio</h1>
+        <p>Fotos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "On set" (entre "Now Showing" y "Work").
+           Si no hay ninguna publicada, la sección no se muestra.</p></div></div>
+      <div class="panel">
+        <div class="panel__head"><h2>Fotos <small class="hint" id="photo-count"></small></h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="btn btn--primary btn--sm">Subir fotos<input type="file" id="photos-upload" multiple hidden accept="image/jpeg,image/png,image/webp,image/avif"></label>
+            <button class="btn btn--ghost btn--sm" id="photos-add">+ Desde biblioteca / URL</button></div></div>
+        <p class="hint">Puedes elegir varias fotos a la vez. Arrastra ⋮⋮ para cambiar el orden: las primeras salen arriba.
+          Recomendado: JPG o WebP de unos 2000 px de ancho. Fotos horizontales y verticales sirven; el sitio las encuadra solo.</p>
+        <div class="progress" id="photos-progress" hidden><span></span></div>
+        <div class="rows" id="photo-rows" style="margin-top:14px"></div>
+      </div>
+      <div class="savebar"><button class="btn btn--primary" id="photos-save">Guardar galería</button></div>`;
+
+    const rows = $('#photo-rows');
+    const photoRow = (m = {}) => `<div class="row row--photo" draggable="true">
+      <span class="handle" title="Arrastrar">⋮⋮</span>
+      <img class="preview" src="${esc(m.url)}" alt="">
+      <input data-k="url" placeholder="URL de la foto" value="${esc(m.url)}">
+      <input data-k="caption" placeholder="Pie de foto en inglés (opcional, ej. Shooting TITO, 2024)" value="${esc(m.caption)}">
+      <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicada</label>
+      <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
+    </div>`;
+    const count = () => {
+      const n = $$('.row', rows).length;
+      $('#photo-count').textContent = n ? `· ${n}` : '';
+      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay fotos. Pulsa "Subir fotos".</p>';
+    };
+    const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', photoRow(m)); count(); };
+    const collect = () => $$('.row', rows).map((r) => ({
+      url: $('[data-k=url]', r).value.trim(), caption: $('[data-k=caption]', r).value.trim(), published: $('[data-k=published]', r).checked ? 1 : 0
+    })).filter((m) => m.url);
+    const save = (btn, msg = 'Galería guardada') => run(btn, () => api('/api/admin/studio-photos', { method: 'PUT', body: collect() }), msg);
+
+    list.forEach(append); count();
+
+    $('#photos-add').addEventListener('click', async () => { const url = await pickMedia(); if (url && !isVideo(url)) append({ url }); });
+    // Al subir, las fotos se añaden y la galería se guarda sola
+    $('#photos-upload').addEventListener('change', async (e) => {
+      const bar = $('#photos-progress'); bar.hidden = false;
+      const saved = await run(null, () => uploadFiles(e.target.files, (f) => { bar.firstElementChild.style.width = f * 100 + '%'; }), null);
+      bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
+      if (!saved || !saved.length) return;
+      saved.filter((f) => !String(f.mime || '').startsWith('video')).forEach((f) => append({ url: f.url }));
+      save(null, `${saved.length} foto${saved.length > 1 ? 's' : ''} subida${saved.length > 1 ? 's' : ''} y guardada${saved.length > 1 ? 's' : ''}`);
+    });
+    rows.addEventListener('input', (e) => {
+      if (e.target.dataset.k !== 'url') return;
+      e.target.closest('.row').querySelector('.preview').src = e.target.value;
+    });
+    rows.addEventListener('click', (e) => { if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); } });
+    enableDragSort(rows);
+    $('#photos-save').addEventListener('click', (e) => save(e.target));
+  };
+
   /* ═════════════ VISTA: Proyectos ═════════════ */
   function projectTable(list, spotlightId) {
     return `<div class="table-wrap"><table class="table">

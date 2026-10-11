@@ -552,66 +552,108 @@
     if (!list.length) $('#featured').hidden = true;
   }
 
-  /* ───────────────────────── Render: categorías ───────────────────────── */
-  function renderCategories() {
-    const counts = {};
-    state.projects.forEach((p) => { counts[p.category_id] = (counts[p.category_id] || 0) + 1; });
-    $('.cat-list').innerHTML = state.categories.map((c, i) => `
-      <li class="cat-item">
-        <a href="#work" data-cat="${esc(c.slug)}" data-cover="${esc(safeUrl(c.cover_url))}">
-          <span class="mono">${String(i + 1).padStart(2, '0')}</span>
-          <h3>${esc(c.name)}<span class="cat-count">(${counts[c.id] || 0})</span></h3>
-          <p>${esc(c.description || '')}</p>
-        </a>
-      </li>`).join('');
+  /* ───────────────────────── Render: On set (galería del estudio) ───────────────────────── */
+  /**
+   * Fotos de rodaje y detrás de cámaras que se suben en el panel → "Galería del estudio".
+   * Se ven como una hoja de contactos de película: columnas a distinta velocidad al hacer scroll,
+   * número de fotograma, pie de foto al pasar el cursor y visor a pantalla completa al hacer clic.
+   * Cada foto tiene un formato fijo (según su posición), así la altura de la sección no cambia
+   * cuando terminan de cargar las imágenes y las escenas fijadas de más abajo no se descuadran.
+   */
+  const ONSET_LIMIT = 12;
+  const ONSET_RATIOS = ['4/5', '3/2', '1/1', '3/4', '16/10', '4/5', '5/4', '2/3', '3/2'];
+  let onsetAll = false;
+  const onsetCols = () => (innerWidth <= 860 ? 2 : innerWidth <= 1200 ? 3 : 4);
+  function renderOnset() {
+    const sec = $('#onset');
+    if (!sec) return;
+    const photos = (state.photos || []).map((m) => ({ ...m, url: safeUrl(m.url) })).filter((m) => m.url);
+    sec.hidden = !photos.length;
+    $$('.nav__onset').forEach((a) => { a.hidden = !photos.length; });
+    if (!photos.length) return;
 
-    // Imagen flotante que sigue al cursor al pasar por cada categoría
-    const preview = $('.cat-preview');
-    const pimg = preview.querySelector('img');
-    const xTo = ANIM ? gsap.quickTo(preview, 'x', { duration: .6, ease: 'power3' }) : null;
-    const yTo = ANIM ? gsap.quickTo(preview, 'y', { duration: .6, ease: 'power3' }) : null;
-    let pointerInList = false, shown = false;
-    // overwrite: true → cada orden cancela la anterior, así "ocultar" nunca pierde contra un "mostrar" a medias
-    const show = (src) => {
-      if (!ANIM || !src) return;
-      if (pimg.getAttribute('src') !== src) pimg.src = src;
-      shown = true;
-      gsap.to(preview, { opacity: 1, scale: 1, rotate: gsap.utils.random(-6, 6), duration: .5, ease: 'power3.out', overwrite: true });
-    };
-    const hide = (fast) => {
-      if (!ANIM || !shown) return;
-      shown = false;
-      gsap.to(preview, { opacity: 0, scale: .8, rotate: 0, duration: fast ? .2 : .4, ease: 'power2.out', overwrite: true });
-    };
-    const list = $('.cat-list');
-    list.addEventListener('mousemove', (e) => {
-      if (!xTo) return;
-      const a = e.target.closest('.cat-item a');
-      if (!pointerInList) {
-        // Primer movimiento real del ratón: coloca la imagen bajo el cursor
-        gsap.set(preview, { x: e.clientX, y: e.clientY });
-        pointerInList = true;
-      }
-      if (a && !shown) show(a.dataset.cover);
-      else if (!a) hide();
-      xTo(e.clientX); yTo(e.clientY);
+    // Se pintan todas; las que pasan del límite quedan ocultas hasta pulsar "Show all photos"
+    const shown = photos;
+    const n = onsetCols();
+    // Cada foto va a la columna más corta (según su formato), así las columnas terminan parejas
+    const cols = Array.from({ length: n }, () => []), heights = Array(n).fill(0);
+    const ratioH = (i) => { const [w, h] = ONSET_RATIOS[i % ONSET_RATIOS.length].split('/').map(Number); return h / w; };
+    shown.forEach((m, i) => {
+      const visible = onsetAll || i < ONSET_LIMIT;
+      const c = heights.indexOf(Math.min(...heights));
+      cols[c].push(i);
+      if (visible) heights[c] += ratioH(i);
+      else heights[c] += ratioH(i) * 1.0001;   // las ocultas siguen el mismo reparto al mostrarse
     });
-    list.addEventListener('mouseleave', () => { pointerInList = false; hide(); });
-    // Al hacer scroll (rueda, trackpad, teclado o un enlace) la imagen se oculta al instante;
-    // vuelve a salir solo cuando el ratón se mueve otra vez sobre una categoría
-    addEventListener('scroll', () => { pointerInList = false; hide(true); }, { passive: true });
-    // Seguro extra: si la sección sale de la pantalla o el ratón sale de la ventana, se oculta
-    new IntersectionObserver(([en]) => { if (!en.isIntersecting) { pointerInList = false; hide(true); } }).observe(list);
-    document.addEventListener('mouseleave', () => { pointerInList = false; hide(true); });
-    addEventListener('blur', () => hide(true));
-    $$('.cat-item a').forEach((a) => {
-      a.addEventListener('mouseenter', () => { if (pointerInList) show(a.dataset.cover); });
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        setFilter(a.dataset.cat);
-        $('#work').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' });
+    const frame = (i) => `${String(i + 1).padStart(2, '0')}${'ABC'[i % 3]}`;
+    $('.onset__grid', sec).innerHTML = cols.map((list, c) => `<div class="onset__col" data-col="${c}">${list.map((i) => {
+      const m = shown[i];
+      return `<button type="button" class="shot" data-i="${i}"${!onsetAll && i >= ONSET_LIMIT ? ' hidden' : ''} style="--ar:${ONSET_RATIOS[i % ONSET_RATIOS.length]}" aria-label="${esc(m.caption || 'On set photo ' + (i + 1))}">
+          <img src="${esc(m.url)}" alt="${esc(m.caption || '')}" loading="lazy" draggable="false">
+          <span class="shot__no mono" aria-hidden="true">${frame(i)}</span>
+          ${m.caption ? `<span class="shot__cap">${esc(m.caption)}</span>` : ''}
+        </button>`;
+    }).join('')}</div>`).join('');
+    $('.onset__total', sec).textContent = `${String(photos.length).padStart(2, '0')} FRAMES`;
+    const more = $('.onset__more', sec);
+    more.hidden = onsetAll || photos.length <= ONSET_LIMIT;
+    $('span', more).textContent = `Show all photos (${photos.length})`;
+
+    if (!sec.dataset.bound) {
+      sec.dataset.bound = '1';
+      // Clic en una foto → visor a pantalla completa (flechas para pasar)
+      sec.addEventListener('click', (e) => {
+        const shot = e.target.closest('.shot');
+        if (!shot) return;
+        const list = (state.photos || []).map((m) => ({ type: 'image', url: safeUrl(m.url), caption: m.caption })).filter((m) => m.url);
+        gallery = list;
+        openLightbox(+shot.dataset.i);
       });
+      more.addEventListener('click', () => {
+        onsetAll = true;
+        const extra = $$('.shot[hidden]', sec);
+        extra.forEach((el) => { el.hidden = false; });
+        more.hidden = true;
+        if (ANIM) gsap.fromTo(extra, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: .8, stagger: .05, ease: 'power3.out' });
+        ST && ST.refresh();
+      });
+      // 4 columnas en pantallas grandes, 3 en portátiles pequeños, 2 en celular: se reparte de nuevo al cambiar
+      let lastN = n, rt = null;
+      addEventListener('resize', () => {
+        clearTimeout(rt);
+        rt = setTimeout(() => {
+          if (onsetCols() === lastN) return;
+          lastN = onsetCols();
+          renderOnset();
+          if (ST) { onsetAnimations(); ST.refresh(); }
+        }, 200);
+      });
+    }
+  }
+
+  /** Animaciones de "On set": las fotos se revelan al entrar y las columnas se mueven a distinta velocidad. */
+  let onsetTweens = [];
+  function onsetAnimations() {
+    onsetTweens.forEach((t) => { t.scrollTrigger && t.scrollTrigger.kill(); t.kill(); });
+    onsetTweens = [];
+    const sec = $('#onset');
+    if (!ANIM || !ST || !sec || sec.hidden) return;
+    $$('.shot:not([hidden])', sec).forEach((el) => {
+      onsetTweens.push(gsap.fromTo(el, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: 1.2, ease: 'power4.inOut', clearProps: 'clipPath',
+        scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
+      onsetTweens.push(gsap.fromTo($('img', el), { scale: 1.25 }, { scale: 1, duration: 1.6, ease: 'power3.out', clearProps: 'transform',
+        scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
     });
+    // Parallax por columnas (solo escritorio): la del centro sube, las de los lados bajan un poco
+    if (!matchMedia('(max-width: 860px)').matches) {
+      $$('.onset__col', sec).forEach((col, c) => {
+        const amt = c % 2 ? -34 : 22;
+        onsetTweens.push(gsap.fromTo(col, { y: -amt }, { y: amt, ease: 'none',
+          scrollTrigger: { trigger: '.onset__grid', start: 'top bottom', end: 'bottom top', scrub: true } }));
+      });
+    }
+    onsetTweens.push(gsap.from('.onset__strip', { opacity: 0, duration: 1, stagger: .2, scrollTrigger: { trigger: '.onset__sheet', start: 'top 85%' } }));
+    onsetTweens.push(gsap.from('.onset__lede', { opacity: 0, y: 20, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.onset__head', start: 'top 85%' } }));
   }
 
   /* ───────────────────────── Render: filtros + galería ───────────────────────── */
@@ -804,7 +846,8 @@
     $$('.section-head__num').forEach((el) => gsap.from(el, { opacity: 0, x: -20, duration: .8, scrollTrigger: { trigger: el, start: 'top 85%' } }));
 
     // Lista de categorías: líneas que se dibujan + entrada escalonada
-    gsap.from('.cat-item', { opacity: 0, y: 50, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.cat-list', start: 'top 80%' } });
+    // On set (galería del estudio)
+    onsetAnimations();
 
     // ESTUDIO — la foto a través de las letras.
     // Escritorio: la escena se fija; al bajar, la foto sube dentro de las letras, las letras crecen hasta
@@ -1671,7 +1714,7 @@
       applySettings();
       renderSpotlight();
       renderFeatured();
-      renderCategories();
+      renderOnset();
       renderFilters();
       renderGrid();
       renderFounder();

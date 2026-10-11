@@ -124,3 +124,13 @@ CREATE TABLE IF NOT EXISTS news (
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_news_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Galería del estudio: fotos de rodaje y detrás de cámaras (sección "On set" del sitio)
+CREATE TABLE IF NOT EXISTS studio_photos (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  url        VARCHAR(500) NOT NULL,
+  caption    VARCHAR(300),
+  published  TINYINT(1) DEFAULT 1,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
