@@ -35,15 +35,19 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_news_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
-  // Galería del estudio (sección "On set": fotos de rodaje y detrás de cámaras)
+  // Galería del estudio (sección "On set": videos de rodaje y detrás de cámaras)
   await query(`CREATE TABLE IF NOT EXISTS studio_photos (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     url VARCHAR(500) NOT NULL,
+    poster_url VARCHAR(500),
     caption VARCHAR(300),
     published TINYINT(1) DEFAULT 1,
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Portada opcional de cada video (si la tabla se creó en la versión anterior, solo con fotos)
+  const [hasPoster] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'studio_photos' AND COLUMN_NAME = 'poster_url'");
+  if (!hasPoster) await query('ALTER TABLE studio_photos ADD COLUMN poster_url VARCHAR(500) NULL AFTER url');
   const [row] = await query("SELECT setting_value FROM settings WHERE setting_key = 'hero_videos'");
   const current = row ? row.setting_value : null;
   // Se escribe la demo si no hay videos o si quedaron los enlaces de ejemplo externos de la versión anterior

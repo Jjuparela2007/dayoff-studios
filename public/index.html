@@ -163,19 +163,24 @@
       </div>
     </section>
 
-    <!-- ═══════════ ON SET (galería del estudio: rodajes y detrás de cámaras, se edita en el panel) ═══════════ -->
+    <!-- ═══════════ ON SET (galería de videos del estudio, se edita en el panel → Galería de videos) ═══════════ -->
     <section class="onset" id="onset" hidden>
-      <header class="section-head onset__head">
-        <span class="mono section-head__num">02</span>
-        <h2 class="section-title" data-reveal>On Set</h2>
-        <p class="onset__lede">Behind the camera — moments from our shoots.</p>
+      <header class="onset__band">
+        <h2 class="onset__title">On Set</h2>
+        <svg class="onset__chev" viewBox="0 0 24 14" aria-hidden="true"><path d="M2 2l10 10L22 2"/></svg>
       </header>
-      <div class="onset__sheet">
-        <div class="onset__strip mono" aria-hidden="true"><span>DAYOFF STUDIOS</span><span class="onset__strip-roll">ROLL A · 35MM</span></div>
-        <div class="onset__grid"></div>
-        <div class="onset__strip mono" aria-hidden="true"><span class="onset__strip-roll">KODAK VISION3 500T</span><span class="onset__total"></span></div>
+      <!-- "Rollo" de cámara: escala de exposición que se desliza al hacer scroll -->
+      <div class="meter" aria-hidden="true">
+        <span class="meter__side">1\400&nbsp;&nbsp; ISO 400 &nbsp;|</span>
+        <div class="meter__scale">
+          <i class="meter__mark"></i>
+          <div class="meter__track"></div>
+          <div class="meter__ticks"></div>
+        </div>
+        <span class="meter__side">|&nbsp; AWB &nbsp;FPS 24 &nbsp;f1.8</span>
       </div>
-      <button type="button" class="btn-ghost onset__more" hidden><span>Show all photos</span></button>
+      <div class="onset__wall"></div>
+      <button type="button" class="btn-ghost onset__more" hidden><span>Show all</span></button>
     </section>
 
     <!-- ═══════════ OBRAS (galería filtrable) ═══════════ -->

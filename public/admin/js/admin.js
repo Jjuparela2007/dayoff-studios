@@ -437,64 +437,97 @@
     }));
   };
 
-  /* ═════════════ VISTA: Galería del estudio ("On set" en el sitio) ═════════════ */
+  /* ═════════════ VISTA: Galería del estudio ("On set" en el sitio): videos ═════════════ */
+  const ytIdOf = (u) => (String(u || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/) || [])[1];
+  const isEmbedUrl = (u) => /(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u || '');
+  /** Miniatura de la fila: el video propio, la portada, o la miniatura de YouTube. */
+  const clipPreview = (url, poster) => {
+    if (poster) return `<img class="preview" src="${esc(poster)}" alt="">`;
+    if (isVideo(url)) return `<video class="preview" src="${esc(url)}#t=0.5" muted preload="metadata"></video>`;
+    const yt = ytIdOf(url);
+    if (yt) return `<img class="preview" src="https://i.ytimg.com/vi/${yt}/mqdefault.jpg" alt="">`;
+    if (isEmbedUrl(url)) return '<span class="preview preview--label">Vimeo</span>';
+    return url ? `<img class="preview" src="${esc(url)}" alt="">` : '<span class="preview"></span>';
+  };
+
   views.galeria = async () => {
     const list = await api('/api/admin/studio-photos');
     view.innerHTML = `
       <div class="page-head"><div><h1>Galería del estudio</h1>
-        <p>Fotos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "On set" (entre "Now Showing" y "Work").
-           Si no hay ninguna publicada, la sección no se muestra.</p></div></div>
+        <p>Videos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "On set" (entre "Now Showing" y "Work"):
+           los archivos se reproducen solos y sin sonido mientras se ven, y al hacer clic se abren en grande con sonido.
+           Si no hay ninguno publicado, la sección no se muestra.</p></div></div>
       <div class="panel">
-        <div class="panel__head"><h2>Fotos <small class="hint" id="photo-count"></small></h2>
+        <div class="panel__head"><h2>Videos <small class="hint" id="clip-count"></small></h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <label class="btn btn--primary btn--sm">Subir fotos<input type="file" id="photos-upload" multiple hidden accept="image/jpeg,image/png,image/webp,image/avif"></label>
-            <button class="btn btn--ghost btn--sm" id="photos-add">+ Desde biblioteca / URL</button></div></div>
-        <p class="hint">Puedes elegir varias fotos a la vez. Arrastra ⋮⋮ para cambiar el orden: las primeras salen arriba.
-          Recomendado: JPG o WebP de unos 2000 px de ancho. Fotos horizontales y verticales sirven; el sitio las encuadra solo.</p>
-        <div class="progress" id="photos-progress" hidden><span></span></div>
-        <div class="rows" id="photo-rows" style="margin-top:14px"></div>
+            <label class="btn btn--primary btn--sm">Subir videos<input type="file" id="clips-upload" multiple hidden accept="video/mp4,video/webm,video/quicktime"></label>
+            <button class="btn btn--ghost btn--sm" id="clips-link">+ Link de YouTube / Vimeo</button>
+            <button class="btn btn--ghost btn--sm" id="clips-add">+ Desde biblioteca</button></div></div>
+        <p class="hint">
+          <b>Clips cortos (10 a 60 s):</b> súbelos como archivo MP4 (H.264), máximo 200 MB; mejor si pesan menos de 30 MB (en HandBrake: preset "Fast 1080p30").<br>
+          <b>Videos largos (making of, entrevistas):</b> súbelos a YouTube o Vimeo y pega el link aquí: cargan más rápido y no ocupan espacio.<br>
+          <b>Portada</b> (opcional): imagen que se ve mientras carga el video; recomendada para links de Vimeo. Arrastra ⋮⋮ para ordenar: los primeros salen arriba.</p>
+        <div class="progress" id="clips-progress" hidden><span></span></div>
+        <div class="rows" id="clip-rows" style="margin-top:14px"></div>
       </div>
-      <div class="savebar"><button class="btn btn--primary" id="photos-save">Guardar galería</button></div>`;
+      <div class="savebar"><button class="btn btn--primary" id="clips-save">Guardar galería</button></div>`;
 
-    const rows = $('#photo-rows');
-    const photoRow = (m = {}) => `<div class="row row--photo" draggable="true">
+    const rows = $('#clip-rows');
+    const clipRow = (m = {}) => `<div class="row row--clip" draggable="true">
       <span class="handle" title="Arrastrar">⋮⋮</span>
-      <img class="preview" src="${esc(m.url)}" alt="">
-      <input data-k="url" placeholder="URL de la foto" value="${esc(m.url)}">
-      <input data-k="caption" placeholder="Pie de foto en inglés (opcional, ej. Shooting TITO, 2024)" value="${esc(m.caption)}">
-      <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicada</label>
+      <span class="clip-prev">${clipPreview(m.url, m.poster_url)}</span>
+      <div class="clip-fields">
+        <div class="clip-url"><input data-k="url" placeholder="Archivo de video o link de YouTube / Vimeo" value="${esc(m.url)}">
+          <button type="button" class="btn btn--ghost btn--sm" data-pick-row="url">Biblioteca</button></div>
+        <div class="clip-url"><input data-k="poster_url" placeholder="Portada (opcional)" value="${esc(m.poster_url)}">
+          <button type="button" class="btn btn--ghost btn--sm" data-pick-row="poster_url">Biblioteca</button></div>
+        <input data-k="caption" placeholder="Pie de video en inglés (opcional, ej. Behind the scenes — TITO, 2024)" value="${esc(m.caption)}">
+      </div>
+      <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicado</label>
       <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
     </div>`;
     const count = () => {
       const n = $$('.row', rows).length;
-      $('#photo-count').textContent = n ? `· ${n}` : '';
-      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay fotos. Pulsa "Subir fotos".</p>';
+      $('#clip-count').textContent = n ? `· ${n}` : '';
+      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay videos. Pulsa "Subir videos" o "+ Link de YouTube / Vimeo".</p>';
     };
-    const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', photoRow(m)); count(); };
+    const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', clipRow(m)); count(); return rows.lastElementChild; };
+    const refreshPrev = (row) => { $('.clip-prev', row).innerHTML = clipPreview($('[data-k=url]', row).value.trim(), $('[data-k=poster_url]', row).value.trim()); };
     const collect = () => $$('.row', rows).map((r) => ({
-      url: $('[data-k=url]', r).value.trim(), caption: $('[data-k=caption]', r).value.trim(), published: $('[data-k=published]', r).checked ? 1 : 0
+      url: $('[data-k=url]', r).value.trim(), poster_url: $('[data-k=poster_url]', r).value.trim(),
+      caption: $('[data-k=caption]', r).value.trim(), published: $('[data-k=published]', r).checked ? 1 : 0
     })).filter((m) => m.url);
     const save = (btn, msg = 'Galería guardada') => run(btn, () => api('/api/admin/studio-photos', { method: 'PUT', body: collect() }), msg);
 
     list.forEach(append); count();
 
-    $('#photos-add').addEventListener('click', async () => { const url = await pickMedia(); if (url && !isVideo(url)) append({ url }); });
-    // Al subir, las fotos se añaden y la galería se guarda sola
-    $('#photos-upload').addEventListener('change', async (e) => {
-      const bar = $('#photos-progress'); bar.hidden = false;
+    $('#clips-add').addEventListener('click', async () => { const url = await pickMedia(); if (url) append({ url }); });
+    $('#clips-link').addEventListener('click', () => { const r = append({}); $('[data-k=url]', r).focus(); });
+    // Al subir, los videos se añaden y la galería se guarda sola
+    $('#clips-upload').addEventListener('change', async (e) => {
+      const big = [...e.target.files].find((f) => f.size > 200 * 1024 * 1024);
+      if (big) { toast(`"${big.name}" pesa ${Math.round(big.size / 1048576)} MB (máximo 200 MB). Comprímelo o súbelo a YouTube/Vimeo y pega el link.`, true); e.target.value = ''; return; }
+      const bar = $('#clips-progress'); bar.hidden = false;
       const saved = await run(null, () => uploadFiles(e.target.files, (f) => { bar.firstElementChild.style.width = f * 100 + '%'; }), null);
       bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
       if (!saved || !saved.length) return;
-      saved.filter((f) => !String(f.mime || '').startsWith('video')).forEach((f) => append({ url: f.url }));
-      save(null, `${saved.length} foto${saved.length > 1 ? 's' : ''} subida${saved.length > 1 ? 's' : ''} y guardada${saved.length > 1 ? 's' : ''}`);
+      saved.forEach((f) => append({ url: f.url }));
+      save(null, `${saved.length} video${saved.length > 1 ? 's' : ''} subido${saved.length > 1 ? 's' : ''} y guardado${saved.length > 1 ? 's' : ''}`);
     });
-    rows.addEventListener('input', (e) => {
-      if (e.target.dataset.k !== 'url') return;
-      e.target.closest('.row').querySelector('.preview').src = e.target.value;
+    rows.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); return; }
+      const pick = e.target.closest('[data-pick-row]');
+      if (pick) {
+        const url = await pickMedia();
+        if (!url) return;
+        const row = pick.closest('.row');
+        $(`[data-k=${pick.dataset.pickRow}]`, row).value = url;
+        refreshPrev(row);
+      }
     });
-    rows.addEventListener('click', (e) => { if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); } });
+    rows.addEventListener('change', (e) => { if (/^(url|poster_url)$/.test(e.target.dataset.k || '')) refreshPrev(e.target.closest('.row')); });
     enableDragSort(rows);
-    $('#photos-save').addEventListener('click', (e) => save(e.target));
+    $('#clips-save').addEventListener('click', (e) => save(e.target));
   };
 
   /* ═════════════ VISTA: Proyectos ═════════════ */

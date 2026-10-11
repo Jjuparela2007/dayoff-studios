@@ -552,109 +552,159 @@
     if (!list.length) $('#featured').hidden = true;
   }
 
-  /* ───────────────────────── Render: On set (galería del estudio) ───────────────────────── */
+  /* ───────────────────────── Render: On set (galería de videos del estudio) ───────────────────────── */
   /**
-   * Fotos de rodaje y detrás de cámaras que se suben en el panel → "Galería del estudio".
-   * Se ven como una hoja de contactos de película: columnas a distinta velocidad al hacer scroll,
-   * número de fotograma, pie de foto al pasar el cursor y visor a pantalla completa al hacer clic.
-   * Cada foto tiene un formato fijo (según su posición), así la altura de la sección no cambia
-   * cuando terminan de cargar las imágenes y las escenas fijadas de más abajo no se descuadran.
+   * Videos de rodaje y detrás de cámaras del panel → "Galería de videos".
+   * Muro de videos centrado sobre fondo negro, en filas de distintos formatos
+   * (ancha · dos desiguales · dos iguales · panorámica · panorámica) que se repiten.
+   * Todos se reproducen a la vez, sin sonido y en bucle, y cada cuadro lleva el logo arriba a la izquierda.
+   * Encima, el "rollo" de cámara: una escala de exposición que se desliza al hacer scroll.
+   * - Archivo .mp4/.webm: se carga al acercarse y se pausa solo cuando sale de la pantalla (ahorra batería).
+   * - Link de YouTube/Vimeo: se reproduce de fondo sin sonido (o muestra la portada si el navegador no deja).
+   * Al hacer clic, el video se abre en grande con sonido.
+   * Cada fila tiene un formato fijo, así la altura no cambia mientras cargan los videos
+   * y las escenas fijadas de más abajo no se descuadran.
    */
-  const ONSET_LIMIT = 12;
-  const ONSET_RATIOS = ['4/5', '3/2', '1/1', '3/4', '16/10', '4/5', '5/4', '2/3', '3/2'];
-  let onsetAll = false;
-  const onsetCols = () => (innerWidth <= 860 ? 2 : innerWidth <= 1200 ? 3 : 4);
+  const ONSET_LIMIT = 9;
+  // Filas que se repiten: cuántos videos lleva cada una, su formato (ancho/alto de la fila) y el ancho de cada cuadro
+  const ONSET_ROWS = [
+    { n: 1, ar: 2.05 },
+    { n: 2, ar: 1.62, w: [42.5, 57.5] },
+    { n: 2, ar: 2.72 },
+    { n: 1, ar: 2.4 },
+    { n: 1, ar: 2.4 }
+  ];
+  const isVideoFile = (u) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u) || /\/video\/upload\//.test(u);
+  const isEmbed = (u) => /(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u);
+  let onsetAll = false, onsetIO = null;
+  const onsetItems = () => (state.photos || []).map((m) => ({ ...m, url: safeUrl(m.url), poster: safeUrl(m.poster_url) })).filter((m) => m.url);
+  const brandMark = () => (state.settings?.logo_url
+    ? `<img src="${esc(safeUrl(state.settings.logo_url))}" alt="">` : (window.DAYOFF_LOGO_SVG || ''));
+
   function renderOnset() {
     const sec = $('#onset');
     if (!sec) return;
-    const photos = (state.photos || []).map((m) => ({ ...m, url: safeUrl(m.url) })).filter((m) => m.url);
-    sec.hidden = !photos.length;
-    $$('.nav__onset').forEach((a) => { a.hidden = !photos.length; });
-    if (!photos.length) return;
+    const items = onsetItems();
+    sec.hidden = !items.length;
+    $$('.nav__onset').forEach((a) => { a.hidden = !items.length; });
+    if (!items.length) return;
 
-    // Se pintan todas; las que pasan del límite quedan ocultas hasta pulsar "Show all photos"
-    const shown = photos;
-    const n = onsetCols();
-    // Cada foto va a la columna más corta (según su formato), así las columnas terminan parejas
-    const cols = Array.from({ length: n }, () => []), heights = Array(n).fill(0);
-    const ratioH = (i) => { const [w, h] = ONSET_RATIOS[i % ONSET_RATIOS.length].split('/').map(Number); return h / w; };
-    shown.forEach((m, i) => {
-      const visible = onsetAll || i < ONSET_LIMIT;
-      const c = heights.indexOf(Math.min(...heights));
-      cols[c].push(i);
-      if (visible) heights[c] += ratioH(i);
-      else heights[c] += ratioH(i) * 1.0001;   // las ocultas siguen el mismo reparto al mostrarse
-    });
-    const frame = (i) => `${String(i + 1).padStart(2, '0')}${'ABC'[i % 3]}`;
-    $('.onset__grid', sec).innerHTML = cols.map((list, c) => `<div class="onset__col" data-col="${c}">${list.map((i) => {
-      const m = shown[i];
-      return `<button type="button" class="shot" data-i="${i}"${!onsetAll && i >= ONSET_LIMIT ? ' hidden' : ''} style="--ar:${ONSET_RATIOS[i % ONSET_RATIOS.length]}" aria-label="${esc(m.caption || 'On set photo ' + (i + 1))}">
-          <img src="${esc(m.url)}" alt="${esc(m.caption || '')}" loading="lazy" draggable="false">
-          <span class="shot__no mono" aria-hidden="true">${frame(i)}</span>
-          ${m.caption ? `<span class="shot__cap">${esc(m.caption)}</span>` : ''}
-        </button>`;
-    }).join('')}</div>`).join('');
-    $('.onset__total', sec).textContent = `${String(photos.length).padStart(2, '0')} FRAMES`;
+    const media = (m) => {
+      if (isVideoFile(m.url)) {
+        // #t=0.1 → Safari muestra el primer cuadro aunque aún no se reproduzca
+        return `<video muted loop playsinline preload="none" data-src="${esc(responsiveVideo(m.url, { max1080: true }))}#t=0.1"${m.poster ? ` poster="${esc(m.poster)}"` : ''} aria-hidden="true"></video>`;
+      }
+      if (isEmbed(m.url)) {
+        const yt = ytId(m.url);
+        const img = m.poster || (yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : '');
+        return `${img ? `<img src="${esc(img)}" alt="" loading="lazy" draggable="false">` : ''}<span class="shot__preview" aria-hidden="true"></span>`;
+      }
+      return `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}" loading="lazy" draggable="false">`;   // fotos antiguas
+    };
+    const tile = (m, i, width) => `<button type="button" class="shot${isEmbed(m.url) ? ' shot--embed' : ''}" data-i="${i}"${width ? ` style="flex-grow:${width}"` : ''} aria-label="${esc('Play: ' + (m.caption || 'On set video ' + (i + 1)))}">
+        ${media(m)}
+        <span class="shot__logo" aria-hidden="true">${brandMark()}</span>
+        ${m.caption ? `<span class="shot__cap">${esc(m.caption)}</span>` : ''}
+      </button>`;
+
+    // Reparte los videos en filas siguiendo el patrón; si al final sobra uno, va en una fila ancha
+    let html = '', i = 0, r = 0;
+    while (i < items.length) {
+      let row = ONSET_ROWS[r % ONSET_ROWS.length];
+      if (row.n > items.length - i) row = { n: 1, ar: 2.05 };
+      const hide = !onsetAll && i >= ONSET_LIMIT;
+      html += `<div class="onset__row" style="--ar:${row.ar}"${hide ? ' hidden' : ''}>${items.slice(i, i + row.n).map((m, k) => tile(m, i + k, row.w && row.w[k])).join('')}</div>`;
+      i += row.n; r++;
+    }
+    $('.onset__wall', sec).innerHTML = html;
+
+    // Escala del "rollo": 16…1 … 1…16, repetida para que nunca se acabe al deslizarse
+    const track = $('.meter__track', sec);
+    if (!track.childElementCount) {
+      const nums = [...Array(16)].map((_, k) => 16 - k).concat(['', ...Array.from({ length: 16 }, (_, k) => k + 1)]);
+      const run = nums.map((n) => (n === '' ? '<b>…</b>' : `<span>${n}</span><b>…</b>`)).join('');
+      track.innerHTML = `<div>${run}</div><div>${run}</div><div>${run}</div>`;
+      $('.meter__ticks', sec).innerHTML = '<span></span>'.repeat(17);
+    }
+
     const more = $('.onset__more', sec);
-    more.hidden = onsetAll || photos.length <= ONSET_LIMIT;
-    $('span', more).textContent = `Show all photos (${photos.length})`;
+    more.hidden = onsetAll || items.length <= ONSET_LIMIT;
+    $('span', more).textContent = `Show all (${items.length})`;
+    onsetPlayback();
 
     if (!sec.dataset.bound) {
       sec.dataset.bound = '1';
-      // Clic en una foto → visor a pantalla completa (flechas para pasar)
+      // Clic → visor a pantalla completa con sonido y controles (flechas para pasar al siguiente)
       sec.addEventListener('click', (e) => {
         const shot = e.target.closest('.shot');
         if (!shot) return;
-        const list = (state.photos || []).map((m) => ({ type: 'image', url: safeUrl(m.url), caption: m.caption })).filter((m) => m.url);
-        gallery = list;
+        gallery = onsetItems().map((m) => ({ type: isEmbed(m.url) ? 'embed' : isVideoFile(m.url) ? 'video' : 'image', url: m.url, caption: m.caption }));
+        $$('video', sec).forEach((v) => v.pause());
         openLightbox(+shot.dataset.i);
       });
       more.addEventListener('click', () => {
         onsetAll = true;
-        const extra = $$('.shot[hidden]', sec);
+        const extra = $$('.onset__row[hidden]', sec);
         extra.forEach((el) => { el.hidden = false; });
         more.hidden = true;
-        if (ANIM) gsap.fromTo(extra, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: .8, stagger: .05, ease: 'power3.out' });
+        onsetPlayback();
+        if (ANIM) gsap.fromTo(extra, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: .8, stagger: .08, ease: 'power3.out' });
         ST && ST.refresh();
-      });
-      // 4 columnas en pantallas grandes, 3 en portátiles pequeños, 2 en celular: se reparte de nuevo al cambiar
-      let lastN = n, rt = null;
-      addEventListener('resize', () => {
-        clearTimeout(rt);
-        rt = setTimeout(() => {
-          if (onsetCols() === lastN) return;
-          lastN = onsetCols();
-          renderOnset();
-          if (ST) { onsetAnimations(); ST.refresh(); }
-        }, 200);
       });
     }
   }
 
-  /** Animaciones de "On set": las fotos se revelan al entrar y las columnas se mueven a distinta velocidad. */
-  let onsetTweens = [];
+  /** Animaciones de "On set": el rollo se desliza con el scroll y cada fila entra al aparecer. */
   function onsetAnimations() {
-    onsetTweens.forEach((t) => { t.scrollTrigger && t.scrollTrigger.kill(); t.kill(); });
-    onsetTweens = [];
     const sec = $('#onset');
     if (!ANIM || !ST || !sec || sec.hidden) return;
-    $$('.shot:not([hidden])', sec).forEach((el) => {
-      onsetTweens.push(gsap.fromTo(el, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: 1.2, ease: 'power4.inOut', clearProps: 'clipPath',
-        scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
-      onsetTweens.push(gsap.fromTo($('img', el), { scale: 1.25 }, { scale: 1, duration: 1.6, ease: 'power3.out', clearProps: 'transform',
-        scrollTrigger: { trigger: el, start: 'top 92%', once: true } }));
+    // La escala pasa por la marca central: a mitad del recorrido, la marca queda entre el "1" y el "1"
+    const track = $('.meter__track', sec), scale = $('.meter__scale', sec);
+    const copyW = () => track.firstElementChild.offsetWidth;
+    const centerX = () => scale.offsetWidth / 2 - copyW() * 1.5;
+    gsap.fromTo(track, { x: () => centerX() + copyW() * .22 }, { x: () => centerX() - copyW() * .22, ease: 'none',
+      scrollTrigger: { trigger: '#onset', start: 'top bottom', end: 'bottom top', scrub: true, invalidateOnRefresh: true } });
+    gsap.from('.onset__title', { yPercent: 100, opacity: 0, duration: 1, ease: 'power4.out', scrollTrigger: { trigger: '.onset__band', start: 'top 85%' } });
+    gsap.from('.onset__chev', { y: -10, opacity: 0, duration: .8, delay: .3, scrollTrigger: { trigger: '.onset__band', start: 'top 85%' } });
+    gsap.from('.meter', { opacity: 0, duration: 1.2, scrollTrigger: { trigger: '.meter', start: 'top 90%' } });
+    $$('.onset__row:not([hidden]) .shot', sec).forEach((el) => {
+      gsap.fromTo(el, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 1.2, ease: 'power4.inOut', clearProps: 'clipPath',
+        scrollTrigger: { trigger: el, start: 'top 92%', once: true } });
     });
-    // Parallax por columnas (solo escritorio): la del centro sube, las de los lados bajan un poco
-    if (!matchMedia('(max-width: 860px)').matches) {
-      $$('.onset__col', sec).forEach((col, c) => {
-        const amt = c % 2 ? -34 : 22;
-        onsetTweens.push(gsap.fromTo(col, { y: -amt }, { y: amt, ease: 'none',
-          scrollTrigger: { trigger: '.onset__grid', start: 'top bottom', end: 'bottom top', scrub: true } }));
-      });
-    }
-    onsetTweens.push(gsap.from('.onset__strip', { opacity: 0, duration: 1, stagger: .2, scrollTrigger: { trigger: '.onset__sheet', start: 'top 85%' } }));
-    onsetTweens.push(gsap.from('.onset__lede', { opacity: 0, y: 20, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.onset__head', start: 'top 85%' } }));
   }
+
+  /** Videos propios de "On set": se cargan al acercarse y solo se reproducen mientras se ven. */
+  function onsetPlayback() {
+    if (onsetIO) onsetIO.disconnect();
+    const vids = $$('#onset .onset__row:not([hidden]) video, #onset .onset__row:not([hidden]) .shot--embed');
+    if (!vids.length) return;
+    const auto = !REDUCED && !navigator.connection?.saveData;
+    onsetIO = new IntersectionObserver((entries) => entries.forEach((en) => {
+      const v = en.target;
+      // YouTube/Vimeo: al aparecer arranca de fondo sin sonido (si el navegador no deja, queda la portada)
+      if (v.classList.contains('shot--embed')) {
+        if (en.isIntersecting && auto && !v.dataset.started) {
+          v.dataset.started = '1';
+          backgroundTrailer($('.shot__preview', v), onsetItems()[+v.dataset.i]?.url);
+          v.classList.add('is-previewing');
+        }
+        return;
+      }
+      if (en.isIntersecting) {
+        if (!v.getAttribute('src')) {
+          v.src = v.dataset.src;
+          v.preload = auto ? 'auto' : 'metadata';
+          v.addEventListener('loadeddata', () => v.closest('.shot')?.classList.add('is-loaded'), { once: true });
+          v.addEventListener('error', () => v.closest('.shot')?.classList.add('is-error'), { once: true });
+        }
+        if (auto && en.intersectionRatio > .25 && lb.hidden) v.play().catch(() => {});
+        else if (en.intersectionRatio <= .25) v.pause();
+      } else v.pause();
+    }), { rootMargin: '300px 0px', threshold: [0, .25, .6] });
+    vids.forEach((v) => onsetIO.observe(v));
+  }
+
+
 
   /* ───────────────────────── Render: filtros + galería ───────────────────────── */
   function renderFilters() {
@@ -1674,14 +1724,16 @@
   function showLightbox(dir = 0) {
     const m = gallery[lbIndex];
     const stage = $('.lightbox__stage', lb);
-    stage.innerHTML = (m.type === 'video'
+    stage.innerHTML = (m.type === 'embed'
+      ? `<div class="lightbox__trailer">${trailerEmbed(m.url) || ''}</div>`
+      : m.type === 'video'
       ? `<video src="${esc(responsiveVideo(m.url))}" controls autoplay playsinline></video>`
       : `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}">`) + (m.caption ? `<figcaption>${esc(m.caption)}</figcaption>` : '');
     $('.lightbox__count', lb).textContent = `${String(lbIndex + 1).padStart(2, '0')} / ${String(gallery.length).padStart(2, '0')}`;
     if (ANIM) gsap.fromTo(stage.firstElementChild, { opacity: 0, x: dir * 60 }, { opacity: 1, x: 0, duration: .5, ease: 'power3.out' });
   }
   function openLightbox(i) { lbIndex = i; lb.hidden = false; showLightbox(); }
-  const closeLightbox = () => { lb.hidden = true; lb.classList.remove('is-trailer'); $('.lightbox__stage', lb).innerHTML = ''; };
+  const closeLightbox = () => { lb.hidden = true; lb.classList.remove('is-trailer'); $('.lightbox__stage', lb).innerHTML = ''; onsetPlayback(); };
   /** Tráiler a pantalla completa (desde el estreno), sin abrir la ficha. */
   function openTrailer(url) {
     const embed = trailerEmbed(url);

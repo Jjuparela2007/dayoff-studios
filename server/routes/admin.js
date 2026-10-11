@@ -234,7 +234,7 @@ router.delete('/news/:id', asyncH(async (req, res) => {
   res.json({ ok: true });
 }));
 
-/* ─────────────── Galería del estudio ("On set": rodajes, detrás de cámaras) ─────────────── */
+/* ─────────────── Galería del estudio ("On set": videos de rodaje y detrás de cámaras) ─────────────── */
 
 router.get('/studio-photos', asyncH(async (req, res) => {
   res.json(await query('SELECT * FROM studio_photos ORDER BY sort_order, id'));
@@ -245,6 +245,7 @@ router.put('/studio-photos', asyncH(async (req, res) => {
   const list = (Array.isArray(req.body) ? req.body : [])
     .map((r) => ({
       url: String(r.url || '').trim().slice(0, 500),
+      poster_url: /^(\/uploads\/|\/media\/|https:\/\/)/i.test(String(r.poster_url || '').trim()) ? String(r.poster_url).trim().slice(0, 500) : null,
       caption: String(r.caption || '').trim().slice(0, 300) || null,
       published: +r.published ? 1 : 0
     }))
@@ -255,7 +256,7 @@ router.put('/studio-photos', asyncH(async (req, res) => {
     await conn.beginTransaction();
     await conn.execute('DELETE FROM studio_photos');
     for (const [i, r] of list.entries()) {
-      await conn.execute('INSERT INTO studio_photos (url, caption, published, sort_order) VALUES (?, ?, ?, ?)', [r.url, r.caption, r.published, i]);
+      await conn.execute('INSERT INTO studio_photos (url, poster_url, caption, published, sort_order) VALUES (?, ?, ?, ?, ?)', [r.url, r.poster_url, r.caption, r.published, i]);
     }
     await conn.commit();
   } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
