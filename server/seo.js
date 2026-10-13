@@ -88,7 +88,7 @@ async function home(req, res, next) {
     render(req, res, {
       title: `${site} — ${s.slogan || 'Film Production Company'}`,
       description: clip(s.seo_description || s.about_text || `${site}: film production company — feature films, short films, series, commercials and documentaries.`),
-      image: abs(req, s.hero_image_url || p?.backdrop_url || p?.poster_url),
+      image: abs(req, s.seo_image_url || s.hero_image_url || p?.backdrop_url || p?.poster_url),
       url: `${baseUrl(req)}/`,
       jsonld: [organization(req, s), { '@context': 'https://schema.org', '@type': 'WebSite', name: site, url: `${baseUrl(req)}/` }]
     });
@@ -105,7 +105,8 @@ async function project(req, res, next) {
     if (!p) {   // slug antiguo (se cambió el título) → redirección permanente al actual
       const [old] = await query('SELECT p.slug FROM project_slugs ps JOIN projects p ON p.id = ps.project_id WHERE ps.slug = ? AND p.published = 1', [slug]).catch(() => []);
       if (old) return res.redirect(301, `/project/${encodeURIComponent(old.slug)}`);
-      return home(req, res, next);   // no existe: se muestra la portada (el JS avisa)
+      res.status(404);              // no existe: se muestra la portada, pero Google recibe "404" (no la indexa como página)
+      return home(req, res, next);
     }
     const url = `${baseUrl(req)}/project/${encodeURIComponent(p.slug)}`;
     const image = abs(req, p.poster_url || p.backdrop_url);          // póster para Google (Movie)
