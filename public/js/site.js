@@ -395,9 +395,11 @@
     // Enlaces: data-setting-href="mailto:contact_email" o "instagram_url"
     $$('[data-setting-href]').forEach((el) => {
       const [prefix, key] = el.dataset.settingHref.includes(':') ? el.dataset.settingHref.split(':') : ['', el.dataset.settingHref];
-      const v = s[key];
-      if (!v) { el.hidden = true; return; }
-      el.href = prefix ? `${prefix}:${v}` : safeUrl(v);
+      const v = String(s[key] || '').trim();
+      const href = v ? (prefix ? `${prefix}:${v}` : safeUrl(v)) : '';
+      // Sin enlace en el panel → el ícono se quita del todo (un <a> sin destino lo marca Google como "no rastreable")
+      if (!href) { el.remove(); return; }
+      el.href = href;
     });
     // Copyright con el año en curso: "© 2026 DayOff Studios. Todos los derechos reservados."
     const copy = String(s.footer_text || s.site_name || 'DayOff Studios').replace(/^\s*©\s*(\d{4}\s*)?/, '');
