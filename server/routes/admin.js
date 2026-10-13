@@ -43,12 +43,33 @@ router.put('/settings', asyncH(async (req, res) => {
 
 /* ─────────────── Categorías ─────────────── */
 
-const CATEGORY_FIELDS = ['name', 'slug', 'description', 'cover_url', 'sort_order'];
+const CATEGORY_FIELDS = ['name', 'slug', 'description', 'cover_url', 'sort_order', 'is_gallery'];
 
 router.get('/categories', asyncH(async (req, res) => {
   res.json(await query(
-    `SELECT c.*, (SELECT COUNT(*) FROM projects p WHERE p.category_id = c.id) AS project_count
+    `SELECT c.*, (SELECT COUNT(*) FROM projects p WHERE p.category_id = c.id) AS project_count,
+            (SELECT COUNT(*) FROM category_photos f WHERE f.category_id = c.id) AS photo_count
        FROM categories c ORDER BY c.sort_order, c.name`));
+}));
+
+// Fotos de una categoría tipo galería (PUT reemplaza la lista completa, en el orden en que llega)
+router.get('/categories/:id/photos', asyncH(async (req, res) => {
+  res.json(await query('SELECT * FROM category_photos WHERE category_id = ? ORDER BY sort_order, id', [req.params.id]));
+}));
+router.put('/categories/:id/photos', asyncH(async (req, res) => {
+  const list = (Array.isArray(req.body) ? req.body : [])
+    .map((r) => ({ url: String(r.url || '').trim().slice(0, 500), caption: String(r.caption || '').trim().slice(0, 300) || null }))
+    .filter((r) => /^(\/uploads\/|\/media\/|https:\/\/)/i.test(r.url)).slice(0, 500);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute('DELETE FROM category_photos WHERE category_id = ?', [req.params.id]);
+    for (const [i, r] of list.entries()) {
+      await conn.execute('INSERT INTO category_photos (category_id, url, caption, sort_order) VALUES (?, ?, ?, ?)', [req.params.id, r.url, r.caption, i]);
+    }
+    await conn.commit();
+  } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
+  res.json({ ok: true, count: list.length });
 }));
 
 router.post('/categories', asyncH(async (req, res) => {

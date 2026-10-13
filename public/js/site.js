@@ -626,16 +626,22 @@
      título grande y el rollo de cámara debajo. Al hacer scroll la imagen se mueve más lento (parallax),
      hace un ligero zoom, y en escritorio cada franja se queda quieta mientras la siguiente sube encima.
      Clic → se abren los proyectos de esa categoría. */
+  const countLabel = (c) => {
+    const n = +c.is_gallery ? (c.photos || []).length : (c.items || state.projects.filter((p) => p.category_id === c.id)).length;
+    return `${String(n).padStart(2, '0')} ${+c.is_gallery ? (n === 1 ? 'photo' : 'photos') : (n === 1 ? 'project' : 'projects')}`;
+  };
   function renderCats() {
     const sec = $('#work'), wrap = $('.cats', sec);
-    const cats = state.categories.map((c) => ({ ...c, items: state.projects.filter((p) => p.category_id === c.id) })).filter((c) => c.items.length);
+    // Categorías normales: las que tienen proyectos. Galerías (Photography…): las que tienen fotos.
+    const cats = state.categories.map((c) => ({ ...c, items: state.projects.filter((p) => p.category_id === c.id), photos: (c.photos || []).filter((f) => safeUrl(f.url)) }))
+      .filter((c) => (+c.is_gallery ? c.photos.length : c.items.length));
     sec.hidden = !cats.length;
     $$('.nav a[href="#work"]').forEach((a) => { a.hidden = !cats.length; });
     if (!cats.length) return;
     const bg = (c) => {
       const cover = safeUrl(c.cover_url);
       const p = c.items.find((x) => safeUrl(x.backdrop_url)) || c.items[0];
-      const img = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
+      const img = +c.is_gallery ? safeUrl(c.photos[0]?.url) : (p ? safeUrl(p.backdrop_url) || safeUrl(p.poster_url) : '');
       if (cover && isVideoFile(cover)) {
         return `<video muted loop playsinline autoplay preload="metadata" src="${esc(responsiveVideo(cover, { max1080: true }))}"${img ? ` poster="${esc(img)}"` : ''} aria-hidden="true"></video>`;
       }
@@ -644,12 +650,12 @@
     };
     wrap.innerHTML = cats.map((c, i) => `
       <div class="cat-block" style="z-index:${i + 1}">
-        <a class="cat-band" href="#work" data-cat="${esc(c.slug)}" aria-label="${esc(c.name)} — ${c.items.length} projects">
+        <a class="cat-band" href="#work" data-cat="${esc(c.slug)}" aria-label="${esc(c.name)} — ${esc(countLabel(c))}">
           <span class="cat-band__media" aria-hidden="true">${bg(c)}</span>
           <span class="cat-band__shade" aria-hidden="true"></span>
           <span class="cat-band__body">
             <span class="cat-band__title">${esc(c.name)}</span>
-            <span class="cat-band__more mono">${String(c.items.length).padStart(2, '0')} ${c.items.length === 1 ? 'project' : 'projects'} <i>→</i></span>
+            <span class="cat-band__more mono">${esc(countLabel(c))} <i>→</i></span>
           </span>
         </a>
         <div class="meter meter--tall" aria-hidden="true">${METER_HTML}</div>
@@ -730,13 +736,24 @@
     const cat = state.categories[i];
     if (!cat) return;
     const items = state.projects.filter((p) => p.category_id === cat.id);
+    const isGallery = +cat.is_gallery;
+    const photos = (cat.photos || []).map((f) => ({ type: 'image', url: safeUrl(f.url), caption: f.caption })).filter((f) => f.url);
     const site = state.settings.site_name || 'DayOff Studios';
     // Portada: la misma imagen/video de la franja
     const bandMedia = fromEl && $('.cat-band__media', fromEl);
     $('.catview__media', catview).innerHTML = bandMedia ? bandMedia.innerHTML : '';
     $('.catview__title', catview).textContent = cat.name;
-    $('.catview__count', catview).textContent = `${String(items.length).padStart(2, '0')} ${items.length === 1 ? 'project' : 'projects'}`;
-    $('.catview__list', catview).innerHTML = items.map((p, k) => {
+    $('.catview__count', catview).textContent = countLabel(cat);
+    catview.classList.toggle('is-gallery', !!isGallery);
+    state.catPhotos = photos;
+    // Galería (Photography…): un mosaico con todas las fotos; clic → visor con zoom
+    if (isGallery) {
+      $('.catview__list', catview).innerHTML = `<div class="photowall">${photos.map((f, k) => `
+        <figure class="photowall__item" data-photo="${k}">
+          <img src="${esc(f.url)}" alt="${esc(f.caption || cat.name)}" loading="lazy" draggable="false">
+          ${f.caption ? `<figcaption>${esc(f.caption)}</figcaption>` : ''}
+        </figure>`).join('')}</div>`;
+    } else $('.catview__list', catview).innerHTML = items.map((p, k) => {
       const poster = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
       const vid = safeUrl(p.preview_video) || safeUrl(p.trailer_url);
       const line = p.trailer_url ? `Watch “${p.title}” trailer, a film produced by ${site}` : (p.tagline || `A film produced by ${site}`);
@@ -752,7 +769,7 @@
         </a>`;
     }).join('');
     // Al final: la siguiente categoría (con proyectos)
-    const others = state.categories.filter((c) => c.id !== cat.id && state.projects.some((p) => p.category_id === c.id));
+    const others = state.categories.filter((c) => c.id !== cat.id && (+c.is_gallery ? (c.photos || []).length : state.projects.some((p) => p.category_id === c.id)));
     const nextCat = others.find((c) => state.categories.indexOf(c) > i) || others[0];
     const nx = $('.catview__next', catview);
     nx.hidden = !nextCat;
@@ -785,6 +802,10 @@
     if (cvIO) cvIO.disconnect();
     const bands = $$('.pband', catview);
     if (ANIM && ST) {
+      $$('.photowall__item', catview).forEach((f) => {
+        cvTweens.push(gsap.fromTo(f, { clipPath: 'inset(100% 0 0 0)', y: 40 }, { clipPath: 'inset(0% 0 0 0)', y: 0, duration: 1.1, ease: 'power4.out', clearProps: 'clipPath',
+          scrollTrigger: { scroller: cvScroll, trigger: f, start: 'top 95%', once: true } }));
+      });
       cvTweens.push(gsap.to('.catview__heading', { yPercent: 60, opacity: 0, ease: 'none',
         scrollTrigger: { scroller: cvScroll, trigger: '.catview__hero', start: 'top top', end: 'bottom top', scrub: true } }));
       bands.forEach((b) => {
@@ -829,6 +850,12 @@
     else done();
   }
   if (catview) {
+    $('.catview__list', catview).addEventListener('click', (e) => {
+      const f = e.target.closest('[data-photo]');
+      if (!f) return;
+      gallery = state.catPhotos || [];
+      openLightbox(+f.dataset.photo, $('img', f));
+    });
     $('.catview__close', catview).addEventListener('click', closeCategory);
     $('.catview__down', catview).addEventListener('click', () => cvScroll.scrollTo({ top: innerHeight * .9, behavior: 'smooth' }));
     // "Next: …" → cambia de categoría sin cerrar (la portada sube con un fundido)

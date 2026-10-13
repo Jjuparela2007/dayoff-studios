@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS categories (
   slug        VARCHAR(140) NOT NULL UNIQUE,
   description TEXT,
   cover_url   VARCHAR(500),
-  sort_order  INT DEFAULT 0
+  sort_order  INT DEFAULT 0,
+  is_gallery  TINYINT(1) DEFAULT 0   -- 1 = categoría de solo fotos (ej. Photography): al abrirla se ve una galería, no proyectos
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Proyectos / obras
@@ -135,4 +136,14 @@ CREATE TABLE IF NOT EXISTS studio_photos (
   published  TINYINT(1) DEFAULT 1,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Fotos de las categorías tipo galería (Photography…)
+CREATE TABLE IF NOT EXISTS category_photos (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  category_id INT UNSIGNED NOT NULL,
+  url         VARCHAR(500) NOT NULL,
+  caption     VARCHAR(300),
+  sort_order  INT DEFAULT 0,
+  CONSTRAINT fk_catphoto_cat FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

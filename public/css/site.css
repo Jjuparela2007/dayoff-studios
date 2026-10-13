@@ -393,6 +393,14 @@ section { position: relative; }
 .pband__year { position: absolute; top: clamp(20px, 3vw, 34px); left: clamp(20px, 6vw, 110px); color: rgba(255,255,255,.8); }
 .pband:hover .pband__title { letter-spacing: .02em; }
 .pband:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+/* Galería de fotos (categorías tipo Photography): mosaico tipo revista, las fotos conservan su formato */
+.photowall { columns: 3 320px; column-gap: clamp(10px, 1.2vw, 18px); padding: clamp(30px, 5vw, 70px) clamp(12px, 3vw, 48px); }
+.photowall__item { position: relative; margin: 0 0 clamp(10px, 1.2vw, 18px); break-inside: avoid; overflow: hidden; cursor: zoom-in; background: #111; }
+.photowall__item img { display: block; width: 100%; height: auto; transition: transform 1.2s var(--ease-out), filter .8s; filter: grayscale(.15); }
+.photowall__item:hover img { transform: scale(1.04); filter: none; }
+.photowall__item figcaption { position: absolute; left: 14px; right: 14px; bottom: 12px; color: #fff; font-size: 14px; text-shadow: 0 1px 8px rgba(0,0,0,.6); opacity: 0; transform: translateY(8px); transition: .5s var(--ease-out); }
+.photowall__item:hover figcaption { opacity: 1; transform: none; }
+@media (max-width: 700px) { .photowall { columns: 2; column-gap: 8px; padding: 18px 8px; } .photowall__item { margin-bottom: 8px; } }
 .catview__next { display: grid; justify-items: center; gap: 10px; padding: clamp(70px, 10vw, 140px) var(--gutter); color: #fff; text-decoration: none; text-align: center; }
 .catview__next[hidden] { display: none; }
 .catview__next .mono { color: var(--accent); }

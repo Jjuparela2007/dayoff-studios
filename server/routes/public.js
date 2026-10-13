@@ -22,7 +22,7 @@ const withFounder = (settings) => {
 router.get('/site', asyncH(async (req, res) => {
   const [settingsRows, categories, projects] = await Promise.all([
     query('SELECT setting_key, setting_value FROM settings'),
-    query('SELECT id, name, slug, description, cover_url FROM categories ORDER BY sort_order, name'),
+    query('SELECT * FROM categories ORDER BY sort_order, name'),
     // trailer_url y preview_video (primer video de la galería) → vista previa al pasar el cursor por la obra
     query(`SELECT p.id, p.category_id, p.title, p.slug, p.tagline, p.year, p.genre, p.director, p.poster_url, p.backdrop_url,
                   p.featured, p.trailer_url,
@@ -58,6 +58,14 @@ router.get('/site', asyncH(async (req, res) => {
        FROM news n LEFT JOIN projects p ON p.id = n.project_id AND p.published = 1
       WHERE n.published = 1
       ORDER BY n.featured DESC, n.published_at IS NULL, n.published_at DESC, n.sort_order, n.id DESC LIMIT 60`).catch(() => []);
+
+  // Categorías tipo galería (Photography…): sus fotos, en el orden del panel
+  const galleryCats = categories.filter((c) => +c.is_gallery);
+  if (galleryCats.length) {
+    const ids = galleryCats.map((c) => c.id);
+    const rows = await query(`SELECT category_id, url, caption FROM category_photos WHERE category_id IN (${ids.map(() => '?').join(',')}) ORDER BY sort_order, id`, ids).catch(() => []);
+    galleryCats.forEach((c) => { c.photos = rows.filter((r) => r.category_id === c.id).map(({ url, caption }) => ({ url, caption })); });
+  }
 
   // Galería del estudio ("On set"): videos publicados, en el orden del panel
   const photos = await query('SELECT id, url, poster_url, caption FROM studio_photos WHERE published = 1 ORDER BY sort_order, id LIMIT 60').catch(() => []);

@@ -366,16 +366,30 @@
             <label>Slug (URL)<input name="slug" value="${esc(editing.slug)}" placeholder="se genera solo"></label>
             <label>Orden<input name="sort_order" type="number" value="${esc(editing.sort_order ?? 0)}"></label>
             <label class="span-all">Descripción<textarea name="description" rows="3">${esc(editing.description)}</textarea></label>
-            ${urlField('cover_url', 'Imagen o video de la franja en "Work" (ancho completo, horizontal: .jpg de ~2000 px o .mp4 corto sin sonido). Si lo dejas vacío se usa la imagen panorámica de su primer proyecto', editing.cover_url)}
+            ${urlField('cover_url', 'Imagen o video de la franja en "Work" (ancho completo, horizontal: .jpg de ~2000 px o .mp4 corto sin sonido). Si lo dejas vacío se usa la imagen panorámica de su primer proyecto (o la primera foto, si es galería)', editing.cover_url)}
+            <label class="check span-all"><input type="checkbox" name="is_gallery" ${+editing.is_gallery ? 'checked' : ''}>
+              Galería de fotos (ej. Photography): al hacer clic en la categoría se abre una galería con sus fotos, en vez de una lista de proyectos</label>
           </div>
           <div class="savebar"><a class="btn btn--ghost" href="#categorias">Cancelar</a><button class="btn btn--primary">Guardar</button></div>
-        </form>` : ''}
+        </form>
+        ${editing.id ? `
+        <div class="panel" id="catphotos" ${+editing.is_gallery ? '' : 'hidden'}>
+          <div class="panel__head"><h2>Fotos de la galería <small class="hint" id="catphoto-count"></small></h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <label class="btn btn--primary btn--sm">Subir fotos<input type="file" id="catphotos-upload" multiple hidden accept="image/jpeg,image/png,image/webp,image/avif"></label>
+              <button class="btn btn--ghost btn--sm" id="catphotos-add">+ Desde biblioteca</button></div></div>
+          <p class="hint">Puedes elegir muchas fotos a la vez; se guardan solas al subirlas. Arrastra ⋮⋮ para ordenar (las primeras salen arriba).
+            JPG o WebP de unos 2000 px por el lado largo; verticales y horizontales se acomodan solas en la galería.</p>
+          <div class="progress" id="catphotos-progress" hidden><span></span></div>
+          <div class="rows" id="catphoto-rows" style="margin-top:14px"></div>
+          <div class="savebar"><button class="btn btn--primary" id="catphotos-save">Guardar fotos</button></div>
+        </div>` : ''}` : ''}
       <div class="panel table-wrap"><table class="table">
-        <thead><tr><th></th><th>Nombre</th><th>Proyectos</th><th>Orden</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Nombre</th><th>Contenido</th><th>Orden</th><th></th></tr></thead>
         <tbody>${cats.map((c) => `<tr>
           <td>${thumb(c.cover_url, 'thumb thumb--wide')}</td>
           <td><b>${esc(c.name)}</b><div class="hint">/${esc(c.slug)}</div></td>
-          <td>${c.project_count}</td><td>${c.sort_order}</td>
+          <td>${+c.is_gallery ? `${c.photo_count} fotos <span class="tag">Galería</span>` : `${c.project_count} proyectos`}</td><td>${c.sort_order}</td>
           <td><div class="actions"><a class="btn btn--ghost btn--sm" href="#categorias/${c.id}">Editar</a>
             <button class="btn btn--danger btn--sm" data-del="${c.id}">Eliminar</button></div></td></tr>`).join('')
           || '<tr><td colspan="5" class="empty">Sin categorías</td></tr>'}</tbody></table></div>`;
@@ -388,6 +402,41 @@
         : api('/api/admin/categories', { method: 'POST', body: formData(form) }));
       if (ok) location.hash = 'categorias';
     });
+    // Galería de fotos de la categoría
+    const box = $('#catphotos');
+    if (box) {
+      $('[name=is_gallery]', form).addEventListener('change', (e) => { box.hidden = !e.target.checked; });
+      const rows = $('#catphoto-rows');
+      const row = (m = {}) => `<div class="row row--photo" draggable="true">
+        <span class="handle" title="Arrastrar">⋮⋮</span>
+        <img class="preview" src="${esc(m.url)}" alt="">
+        <input data-k="url" placeholder="URL de la foto" value="${esc(m.url)}">
+        <input data-k="caption" placeholder="Pie de foto en inglés (opcional)" value="${esc(m.caption)}">
+        <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
+      </div>`;
+      const count = () => {
+        const n = $$('.row', rows).length;
+        $('#catphoto-count').textContent = n ? `· ${n}` : '';
+        if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay fotos. Pulsa "Subir fotos".</p>';
+      };
+      const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', row(m)); count(); };
+      const collect = () => $$('.row', rows).map((r) => ({ url: $('[data-k=url]', r).value.trim(), caption: $('[data-k=caption]', r).value.trim() })).filter((m) => m.url);
+      const save = (btn, msg = 'Fotos guardadas') => run(btn, () => api(`/api/admin/categories/${editing.id}/photos`, { method: 'PUT', body: collect() }), msg);
+      (await api(`/api/admin/categories/${editing.id}/photos`)).forEach(append); count();
+      $('#catphotos-add').addEventListener('click', async () => { const url = await pickMedia(); if (url && !isVideo(url)) append({ url }); });
+      $('#catphotos-upload').addEventListener('change', async (e) => {
+        const bar = $('#catphotos-progress'); bar.hidden = false;
+        const saved = await run(null, () => uploadFiles(e.target.files, (f) => { bar.firstElementChild.style.width = f * 100 + '%'; }), null);
+        bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
+        if (!saved || !saved.length) return;
+        saved.forEach((f) => append({ url: f.url }));
+        save(null, `${saved.length} foto${saved.length > 1 ? 's' : ''} subida${saved.length > 1 ? 's' : ''} y guardada${saved.length > 1 ? 's' : ''}`);
+      });
+      rows.addEventListener('input', (e) => { if (e.target.dataset.k === 'url') e.target.closest('.row').querySelector('.preview').src = e.target.value; });
+      rows.addEventListener('click', (e) => { if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); } });
+      enableDragSort(rows);
+      $('#catphotos-save').addEventListener('click', (e) => save(e.target));
+    }
     $$('[data-del]').forEach((b) => b.addEventListener('click', async () => {
       if (!confirm('¿Eliminar esta categoría? Sus proyectos quedarán sin categoría (no se borran).')) return;
       await run(b, () => api(`/api/admin/categories/${b.dataset.del}`, { method: 'DELETE' }), 'Categoría eliminada');

@@ -45,6 +45,17 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Categorías tipo galería (solo fotos, ej. Photography) y sus fotos
+  const [hasGallery] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'is_gallery'");
+  if (!hasGallery) { await query('ALTER TABLE categories ADD COLUMN is_gallery TINYINT(1) DEFAULT 0'); console.log('✔ categories.is_gallery añadido'); }
+  await query(`CREATE TABLE IF NOT EXISTS category_photos (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    category_id INT UNSIGNED NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    caption VARCHAR(300),
+    sort_order INT DEFAULT 0,
+    CONSTRAINT fk_catphoto_cat FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
   // Portada opcional de cada video (si la tabla se creó en la versión anterior, solo con fotos)
   const [hasPoster] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'studio_photos' AND COLUMN_NAME = 'poster_url'");
   if (!hasPoster) await query('ALTER TABLE studio_photos ADD COLUMN poster_url VARCHAR(500) NULL AFTER url');
