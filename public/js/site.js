@@ -646,7 +646,9 @@
             <span class="cat-band__more mono">${String(c.items.length).padStart(2, '0')} ${c.items.length === 1 ? 'project' : 'projects'} <i>→</i></span>
           </span>
         </a>
+        <div class="meter meter--tall" aria-hidden="true">${METER_HTML}</div>
       </div>`).join('');
+    $$('.meter', wrap).forEach(fillMeter);
     if (REDUCED || navigator.connection?.saveData) $$('.cat-band video', wrap).forEach((v) => { v.removeAttribute('autoplay'); v.pause(); });
 
     if (!wrap.dataset.bound) {
@@ -655,7 +657,7 @@
         const a = e.target.closest('.cat-band');
         if (!a) return;
         e.preventDefault();
-        openCategory(a.dataset.cat);
+        openCategory(a.dataset.cat, a);
       });
     }
   }
@@ -674,6 +676,7 @@
       // El título también se acerca desde grande y transparente
       gsap.fromTo(body, { scale: 1.35, opacity: 0, yPercent: 40 }, { scale: 1, opacity: 1, yPercent: 0, ease: 'power1.out',
         scrollTrigger: { trigger: b, start: 'top bottom', end: 'top 25%', scrub: true } });
+      slideMeter($('.meter', b), b);
     });
     // Escritorio: cada franja se queda quieta y la siguiente sube encima; mientras tanto la de abajo se aleja
     ST.matchMedia({
@@ -697,30 +700,131 @@
     });
   }
 
-  /* Proyectos de una categoría: capa a pantalla completa con las tarjetas (y filtros para cambiar de categoría) */
+  /* ───────────────────────── Página de una categoría ─────────────────────────
+     Clic en una franja → la franja se agranda hasta ocupar toda la pantalla (zoom) y debajo aparecen
+     sus proyectos: una franja de ancho completo por proyecto con su video de fondo (el primer video de
+     su galería o su tráiler; si no tiene, su imagen panorámica), el título abajo a la izquierda y una
+     línea "Watch …". Las imágenes hacen parallax y zoom al pasar. Clic en un proyecto → su ficha. */
   const catview = $('.catview');
   if (catview) document.body.append(catview);   // fuera de <main>, para que ninguna transformación la afecte
-  function openCategory(slug) {
-    const cat = state.categories.find((c) => c.slug === slug);
+  const cvScroll = catview && $('.catview__scroll', catview);
+  let cvTweens = [], cvIO = null;
+  function catMedia(url, poster) {
+    if (url && isVideoFile(url)) {
+      return `<video muted loop playsinline preload="none" data-src="${esc(responsiveVideo(url, { max1080: true }))}"${poster ? ` poster="${esc(poster)}"` : ''}></video>`;
+    }
+    return `${poster ? `<img src="${esc(poster)}" alt="" draggable="false">` : ''}${url && isEmbed(url) ? `<span class="pband__embed" data-embed="${esc(url)}"></span>` : ''}`;
+  }
+  function openCategory(slug, fromEl) {
+    const i = state.categories.findIndex((c) => c.slug === slug);
+    const cat = state.categories[i];
     if (!cat) return;
+    const items = state.projects.filter((p) => p.category_id === cat.id);
+    const site = state.settings.site_name || 'DayOff Studios';
+    // Portada: la misma imagen/video de la franja
+    const bandMedia = fromEl && $('.cat-band__media', fromEl);
+    $('.catview__media', catview).innerHTML = bandMedia ? bandMedia.innerHTML : '';
     $('.catview__title', catview).textContent = cat.name;
+    $('.catview__count', catview).textContent = `${String(items.length).padStart(2, '0')} ${items.length === 1 ? 'project' : 'projects'}`;
+    $('.catview__list', catview).innerHTML = items.map((p, k) => {
+      const poster = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
+      const vid = safeUrl(p.preview_video) || safeUrl(p.trailer_url);
+      const line = p.trailer_url ? `Watch “${p.title}” trailer, a film produced by ${site}` : (p.tagline || `A film produced by ${site}`);
+      return `<a class="pband" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}" style="z-index:${k + 1}">
+          <span class="pband__media" aria-hidden="true">${catMedia(vid, poster)}</span>
+          <span class="pband__shade" aria-hidden="true"></span>
+          <span class="pband__body">
+            <span class="pband__logo" aria-hidden="true">${brandMark()}</span>
+            <span class="pband__title">${esc(p.title)}</span>
+            <span class="pband__line">${esc(line)}</span>
+          </span>
+          ${p.year ? `<span class="pband__year mono">${esc(p.year)}</span>` : ''}
+        </a>`;
+    }).join('');
+    // Al final: la siguiente categoría (con proyectos)
+    const others = state.categories.filter((c) => c.id !== cat.id && state.projects.some((p) => p.category_id === c.id));
+    const nextCat = others.find((c) => state.categories.indexOf(c) > i) || others[0];
+    const nx = $('.catview__next', catview);
+    nx.hidden = !nextCat;
+    if (nextCat) { nx.dataset.cat = nextCat.slug; nx.innerHTML = `<span class="mono">Next</span><b>${esc(nextCat.name)}</b><i>→</i>`; }
+
+    const first = catview.hidden;
     catview.hidden = false;
     state.catOpen = true;
     document.body.classList.add('is-locked');
-    $('.catview__scroll', catview).scrollTop = 0;
-    setFilter(slug);
-    if (ANIM) gsap.fromTo(catview, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: .8, ease: 'power4.inOut', clearProps: 'clipPath' });
+    cvScroll.scrollTop = 0;
+    $$('.cat-band video').forEach((v) => v.pause());
+    // Zoom: el recorte arranca en la posición de la franja pulsada y se abre a pantalla completa
+    if (ANIM && first) {
+      const r = fromEl ? fromEl.getBoundingClientRect() : { top: innerHeight / 2, bottom: innerHeight / 2, left: 0, right: innerWidth };
+      const from = `inset(${Math.max(0, r.top)}px ${Math.max(0, innerWidth - r.right)}px ${Math.max(0, innerHeight - r.bottom)}px ${Math.max(0, r.left)}px)`;
+      gsap.fromTo(catview, { clipPath: from }, { clipPath: 'inset(0px 0px 0px 0px)', duration: 1.1, ease: 'expo.inOut', clearProps: 'clipPath' });
+      gsap.fromTo('.catview__media', { scale: 1.05 }, { scale: 1.25, duration: 1.6, ease: 'power3.out' });
+      gsap.fromTo('.catview__heading', { scale: .8, opacity: .4 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out', delay: .2 });
+      gsap.from('.catview__close', { opacity: 0, rotate: -90, duration: .6, delay: .7 });
+    }
+    catviewMotion();
     $('.catview__close', catview).focus({ preventScroll: true });
   }
+
+  /** Movimiento dentro de la página de categoría: parallax/zoom de cada proyecto y videos solo a la vista. */
+  function catviewMotion() {
+    cvTweens.forEach((t) => { t.scrollTrigger && t.scrollTrigger.kill(); t.kill(); });
+    cvTweens = [];
+    if (cvIO) cvIO.disconnect();
+    const bands = $$('.pband', catview);
+    if (ANIM && ST) {
+      cvTweens.push(gsap.to('.catview__heading', { yPercent: 60, opacity: 0, ease: 'none',
+        scrollTrigger: { scroller: cvScroll, trigger: '.catview__hero', start: 'top top', end: 'bottom top', scrub: true } }));
+      bands.forEach((b) => {
+        const st = { scroller: cvScroll, trigger: b, start: 'top bottom', end: 'bottom top', scrub: true };
+        cvTweens.push(gsap.fromTo($('.pband__media', b), { yPercent: -12, scale: 1.35 }, { yPercent: 12, scale: 1.05, ease: 'none', scrollTrigger: st }));
+        cvTweens.push(gsap.fromTo($('.pband__body', b), { y: 80, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out',
+          scrollTrigger: { scroller: cvScroll, trigger: b, start: 'top 85%', end: 'top 35%', scrub: true } }));
+      });
+      ST.refresh();
+    }
+    const auto = !REDUCED && !navigator.connection?.saveData;
+    cvIO = new IntersectionObserver((entries) => entries.forEach((en) => {
+      const band = en.target, v = $('video', band), emb = $('.pband__embed', band);
+      if (v) {
+        if (en.isIntersecting) {
+          if (!v.getAttribute('src')) { v.src = v.dataset.src; v.addEventListener('loadeddata', () => band.classList.add('is-loaded'), { once: true }); }
+          if (auto) v.play().catch(() => {});
+        } else v.pause();
+      }
+      if (emb && en.isIntersecting && auto && !emb.childElementCount) backgroundTrailer(emb, emb.dataset.embed);
+    }), { root: cvScroll, rootMargin: '200px 0px', threshold: .15 });
+    bands.forEach((b) => cvIO.observe(b));
+  }
+
   function closeCategory() {
     if (!state.catOpen) return;
-    const done = () => { catview.hidden = true; $$('.grid video', catview).forEach((v) => v.pause()); };
+    const done = () => {
+      catview.hidden = true;
+      cvTweens.forEach((t) => { t.scrollTrigger && t.scrollTrigger.kill(); t.kill(); }); cvTweens = [];
+      if (cvIO) { cvIO.disconnect(); cvIO = null; }
+      $('.catview__list', catview).innerHTML = '';
+      $('.catview__media', catview).innerHTML = '';
+      $$('.cat-band video').forEach((v) => { if (!REDUCED) v.play().catch(() => {}); });
+    };
     state.catOpen = false;
     if (!state.detailOpen) document.body.classList.remove('is-locked');
-    if (ANIM) gsap.to(catview, { clipPath: 'inset(0 0 100% 0)', duration: .6, ease: 'power3.inOut', onComplete: () => { done(); gsap.set(catview, { clearProps: 'clipPath' }); } });
+    if (ANIM) gsap.to(catview, { clipPath: 'inset(0% 0% 100% 0%)', duration: .7, ease: 'power3.inOut', onComplete: () => { done(); gsap.set(catview, { clearProps: 'clipPath' }); } });
     else done();
   }
-  catview && $('.catview__close', catview).addEventListener('click', closeCategory);
+  if (catview) {
+    $('.catview__close', catview).addEventListener('click', closeCategory);
+    $('.catview__down', catview).addEventListener('click', () => cvScroll.scrollTo({ top: innerHeight * .9, behavior: 'smooth' }));
+    // "Next: …" → cambia de categoría sin cerrar (la portada sube con un fundido)
+    $('.catview__next', catview).addEventListener('click', (e) => {
+      e.preventDefault();
+      const slug = e.currentTarget.dataset.cat;
+      const band = $(`.cat-band[data-cat="${CSS.escape(slug)}"]`);
+      if (ANIM) gsap.to(cvScroll, { opacity: 0, duration: .35, onComplete: () => { openCategory(slug, band); gsap.fromTo(cvScroll, { opacity: 0 }, { opacity: 1, duration: .6 }); } });
+      else openCategory(slug, band);
+    });
+  }
 
   function renderOnset() {
     const sec = $('#onset');
@@ -862,7 +966,6 @@
 
   function setFilter(slug) {
     state.filter = slug;
-    if (catview) $('.catview__title', catview).textContent = slug === 'all' ? 'All work' : (state.categories.find((c) => c.slug === slug)?.name || '');
     $$('.filters button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.filter === slug)));
     moveInk();
     const grid = $('.grid');
@@ -1907,8 +2010,6 @@
       renderFeatured();
       renderOnset();
       renderCats();
-      renderFilters();
-      renderGrid();
       renderFounder();
       renderNews();
       await Promise.race([

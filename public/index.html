@@ -190,19 +190,24 @@
       <div class="cats"></div>
     </section>
 
-    <!-- Proyectos de una categoría (se abre al hacer clic en su franja) -->
+    <!-- Proyectos de una categoría: al hacer clic en una franja se agranda a pantalla completa
+         y debajo aparecen sus proyectos, cada uno en una franja con su video de fondo -->
     <div class="catview" hidden role="dialog" aria-modal="true" aria-labelledby="catview-title">
       <div class="catview__scroll">
-        <header class="catview__head">
-          <p class="mono catview__kicker">Work</p>
-          <h2 class="catview__title" id="catview-title"></h2>
-          <button type="button" class="catview__close" aria-label="Close">&times;</button>
+        <header class="catview__hero">
+          <span class="catview__media" aria-hidden="true"></span>
+          <span class="cat-band__shade" aria-hidden="true"></span>
+          <span class="catview__heading">
+            <span class="mono catview__kicker">Work</span>
+            <span class="catview__title" id="catview-title"></span>
+            <span class="mono catview__count"></span>
+          </span>
+          <span class="catview__down" aria-hidden="true"><svg viewBox="0 0 24 14"><path d="M2 2l10 10L22 2"/></svg></span>
         </header>
-        <div class="filters" role="tablist" aria-label="Filter by category">
-          <span class="filters__ink"></span>
-        </div>
-        <div class="grid"></div>
+        <div class="catview__list"></div>
+        <a class="catview__next" href="#work"></a>
       </div>
+      <button type="button" class="catview__close" aria-label="Close">&times;</button>
     </div>
 
     <!-- ═══════════ ESTUDIO ═══════════ -->
