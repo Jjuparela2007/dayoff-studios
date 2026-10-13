@@ -36,6 +36,23 @@
   // así que la página siempre arranca arriba, como una película desde el primer plano.
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   scrollTo(0, 0);
+  /**
+   * Imagen optimizada: pide al servidor la versión WebP al ancho justo para la pantalla (/img/<ancho>/uploads/…).
+   * "cssW" = ancho aproximado en pantalla (px CSS); se multiplica por la densidad de la pantalla (máx. 2×).
+   * Cloudinary: usa sus transformaciones (f_auto, q_auto, w_). Otros enlaces externos se dejan igual.
+   */
+  const IMG_W = [320, 480, 640, 960, 1280, 1600, 1920, 2560];
+  function opt(url, cssW = innerWidth) {
+    url = safeUrl(url);
+    if (!url) return '';
+    const px = Math.min(2560, Math.round(cssW * Math.min(2, window.devicePixelRatio || 1)));
+    const w = IMG_W.find((x) => x >= px) || 2560;
+    if (/^\/(uploads|media)\/[^?#]+\.(jpe?g|png|webp|avif)$/i.test(url)) return `/img/${w}${url}`;
+    if (/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(url) && !/\/upload\/[^/]*(w_|f_auto)/.test(url)) {
+      return url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${w}/`);
+    }
+    return url;
+  }
   const PLAY_ICON = '<svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>';
 
   /* ───────────────────────── Grano de película ───────────────────────── */
@@ -280,7 +297,7 @@
       document.addEventListener('visibilitychange', () => this.sync());
     },
     showPoster() {
-      if (this.poster && !$('.hero__poster')) $('.hero__media').insertAdjacentHTML('afterbegin', `<img class="hero__poster" src="${esc(this.poster)}" alt="">`);
+      if (this.poster && !$('.hero__poster')) $('.hero__media').insertAdjacentHTML('afterbegin', `<img class="hero__poster" src="${esc(opt(this.poster))}" alt="" fetchpriority="high">`);
     },
     ready() { return this.readyP || Promise.resolve(); },
     /** Arranca el showreel desde el PRIMER clip. Se llama cuando la portada se revela. */
@@ -417,7 +434,7 @@
 
     // Imagen de "Estudio"
     const aboutImg = safeUrl(s.about_image_url) || safeUrl(state.projects[1]?.backdrop_url) || image;
-    $('.about__photo img').src = aboutImg;
+    $('.about__photo img').src = opt(aboutImg);
 
     // Marquesina: eslogan + categorías
     const sun = '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>';
@@ -433,11 +450,11 @@
     if (!p) return;
     const sec = $('#latest');
     const bg = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
-    $('.spotlight__img', sec).src = bg;
+    $('.spotlight__img', sec).src = opt(bg);
     const poster = safeUrl(p.poster_url);
     const fig = $('.spotlight__poster', sec);
     fig.hidden = !poster;
-    if (poster) { $('img', fig).src = poster; $('img', fig).alt = `${p.title} poster`; }
+    if (poster) { $('img', fig).src = opt(poster, 420); $('img', fig).alt = `${p.title} poster`; }
     // Descripción antes de la animación (editable en el panel; si está vacía no se muestra)
     const st = state.settings || {};
     const intro = $('.spotlight__intro', sec), introText = String(st.latest_intro || '').trim();
@@ -570,7 +587,7 @@
     const cat = (id) => state.categories.find((c) => c.id === id)?.name || '';
     $('.featured__track').innerHTML = list.map((p, i) => `
       <a class="feat" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}">
-        <img src="${esc(safeUrl(p.backdrop_url) || safeUrl(p.poster_url))}" alt="${esc(p.title)}" loading="lazy">
+        <img src="${esc(opt(safeUrl(p.backdrop_url) || safeUrl(p.poster_url), Math.min(innerWidth * .62, 1100)))}" alt="${esc(p.title)}" loading="lazy" decoding="async">
         <div class="feat__info">
           <div>
             <span class="mono" style="color:var(--accent)">${esc(cat(p.category_id))} · ${esc(p.year || '')}</span>
@@ -667,10 +684,10 @@
       const p = c.items.find((x) => safeUrl(x.backdrop_url)) || c.items[0];
       const img = +c.is_gallery ? safeUrl(c.photos[0]?.url) : (p ? safeUrl(p.backdrop_url) || safeUrl(p.poster_url) : '');
       if (cover && isVideoFile(cover)) {
-        return `<video muted loop playsinline autoplay preload="metadata" src="${esc(responsiveVideo(cover, { max1080: true }))}"${img ? ` poster="${esc(img)}"` : ''} aria-hidden="true"></video>`;
+        return `<video muted loop playsinline preload="none" data-src="${esc(responsiveVideo(cover, { max1080: true }))}"${img ? ` poster="${esc(opt(img))}"` : ''} aria-hidden="true"></video>`;
       }
       const src = cover || img;
-      return src ? `<img src="${esc(src)}" alt="" loading="lazy" draggable="false">` : '';
+      return src ? `<img src="${esc(opt(src))}" alt="" loading="lazy" decoding="async" draggable="false">` : '';
     };
     wrap.innerHTML = cats.map((c, i) => `
       <div class="cat-block" style="z-index:${i + 1}">
@@ -685,7 +702,16 @@
         <div class="meter meter--tall" aria-hidden="true">${METER_HTML}</div>
       </div>`).join('');
     $$('.meter', wrap).forEach(fillMeter);
-    if (REDUCED || navigator.connection?.saveData) $$('.cat-band video', wrap).forEach((v) => { v.removeAttribute('autoplay'); v.pause(); });
+    // Videos de las franjas: se descargan solo al acercarse y se reproducen solo mientras se ven
+    const catVids = $$('.cat-band video', wrap);
+    if (catVids.length && !REDUCED && !navigator.connection?.saveData) {
+      const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+        const v = en.target;
+        if (en.isIntersecting) { if (!v.getAttribute('src')) v.src = v.dataset.src; if (!state.catOpen) v.play().catch(() => {}); }
+        else v.pause();
+      }), { rootMargin: '250px 0px' });
+      catVids.forEach((v) => io.observe(v));
+    }
 
     if (!wrap.dataset.bound) {
       wrap.dataset.bound = '1';
@@ -753,7 +779,7 @@
     if (url && isVideoFile(url)) {
       return `<video muted loop playsinline preload="none" data-src="${esc(responsiveVideo(url, { max1080: true }))}"${poster ? ` poster="${esc(poster)}"` : ''}></video>`;
     }
-    return `${poster ? `<img src="${esc(poster)}" alt="" draggable="false">` : ''}${url && isEmbed(url) ? `<span class="pband__embed" data-embed="${esc(url)}"></span>` : ''}`;
+    return `${poster ? `<img src="${esc(opt(poster))}" alt="" decoding="async" draggable="false">` : ''}${url && isEmbed(url) ? `<span class="pband__embed" data-embed="${esc(url)}"></span>` : ''}`;
   }
   function openCategory(slug, fromEl) {
     const i = state.categories.findIndex((c) => c.slug === slug);
@@ -766,6 +792,7 @@
     // Portada: la misma imagen/video de la franja
     const bandMedia = fromEl && $('.cat-band__media', fromEl);
     $('.catview__media', catview).innerHTML = bandMedia ? bandMedia.innerHTML : '';
+    $$('.catview__media video', catview).forEach((v) => { if (!v.getAttribute('src') && v.dataset.src) v.src = v.dataset.src; if (!REDUCED) v.play().catch(() => {}); });
     $('.catview__title', catview).textContent = cat.name;
     $('.catview__count', catview).textContent = countLabel(cat);
     catview.classList.toggle('is-gallery', !!isGallery);
@@ -774,7 +801,7 @@
     if (isGallery) {
       $('.catview__list', catview).innerHTML = `<div class="photowall">${photos.map((f, k) => `
         <figure class="photowall__item" data-photo="${k}">
-          <img src="${esc(f.url)}" alt="${esc(f.caption || cat.name)}" loading="lazy" draggable="false">
+          <img src="${esc(opt(f.url, innerWidth <= 700 ? innerWidth / 2 : innerWidth / 3))}" alt="${esc(f.caption || cat.name)}" loading="lazy" decoding="async" draggable="false">
           ${f.caption ? `<figcaption>${esc(f.caption)}</figcaption>` : ''}
         </figure>`).join('')}</div>`;
     } else $('.catview__list', catview).innerHTML = items.map((p, k) => {
@@ -866,7 +893,7 @@
       if (cvIO) { cvIO.disconnect(); cvIO = null; }
       $('.catview__list', catview).innerHTML = '';
       $('.catview__media', catview).innerHTML = '';
-      $$('.cat-band video').forEach((v) => { if (!REDUCED) v.play().catch(() => {}); });
+      $$('.cat-band video').forEach((v) => { if (!REDUCED && v.getAttribute('src')) v.play().catch(() => {}); });
     };
     state.catOpen = false;
     if (!state.detailOpen) document.body.classList.remove('is-locked');
@@ -916,9 +943,9 @@
       if (isEmbed(m.url)) {
         const yt = ytId(m.url);
         const img = m.poster || (yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : '');
-        return `${img ? `<img src="${esc(img)}" alt="" loading="lazy" draggable="false">` : ''}<span class="shot__preview" aria-hidden="true"></span>`;
+        return `${img ? `<img src="${esc(opt(img, 900))}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}<span class="shot__preview" aria-hidden="true"></span>`;
       }
-      return `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}" loading="lazy" draggable="false">`;   // fotos antiguas
+      return `<img src="${esc(opt(m.url, 1000))}" alt="${esc(m.caption || '')}" loading="lazy" decoding="async" draggable="false">`;   // fotos
     };
     const tile = (m, i, width) => `<button type="button" class="shot${isEmbed(m.url) ? ' shot--embed' : ''}" data-i="${i}"${width ? ` style="flex-grow:${width}"` : ''} aria-label="${esc((isVideoFile(m.url) || isEmbed(m.url) ? 'Play: ' : 'View: ') + (m.caption || 'Featured work ' + (i + 1)))}">
         ${media(m)}
@@ -1047,7 +1074,7 @@
     $('.grid').innerHTML = list.length ? list.map((p) => `
       <a class="card" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}">
         <div class="card__frame">
-          <img src="${esc(safeUrl(p.poster_url))}" alt="${esc(p.title)} poster" loading="lazy" draggable="false">
+          <img src="${esc(opt(p.poster_url, 420))}" alt="${esc(p.title)} poster" loading="lazy" decoding="async" draggable="false">
           ${p.year ? `<span class="card__year mono">${esc(p.year)}</span>` : ''}
           <span class="card__play">${PLAY_ICON}</span>
         </div>
@@ -1497,7 +1524,7 @@
         ${m.type === 'video'
           ? `<video data-src="${esc(responsiveVideo(m.url, { max1080: true }))}" muted loop playsinline preload="none" disablepictureinpicture aria-label="${esc(m.caption || p.title)}"></video>
              <span class="vid-badge mono" aria-hidden="true"><i></i>Playing</span>`
-          : `<img src="${esc(m.url)}" alt="${esc(m.caption || p.title)}" loading="lazy">`}
+          : `<img src="${esc(opt(m.url, 900))}" alt="${esc(m.caption || p.title)}" loading="lazy" decoding="async">`}
       </figure>`).join('');
 
     // Siguiente proyecto (para navegar sin volver a la galería)
@@ -1508,9 +1535,9 @@
 
     detailScroll.innerHTML = `
       <section class="d-hero">
-        <div class="d-hero__bg"><img src="${esc(backdrop)}" alt=""></div>
+        <div class="d-hero__bg"><img src="${esc(opt(backdrop))}" data-full="${esc(backdrop)}" alt="" fetchpriority="high"></div>
         <div class="d-hero__content">
-          <div class="d-poster"><img src="${esc(safeUrl(p.poster_url))}" alt="${esc(p.title)} poster"></div>
+          <div class="d-poster"><img src="${esc(opt(p.poster_url, 300))}" data-full="${esc(safeUrl(p.poster_url))}" alt="${esc(p.title)} poster"></div>
           <div>
             <p class="d-kicker mono">${esc(p.category_name || '')}${p.year ? ' · ' + esc(p.year) : ''}</p>
             <h2 class="d-title" id="detail-title">${esc(p.title)}</h2>
@@ -1529,7 +1556,7 @@
 
       ${trailerHtml ? `<section class="d-block d-anim"><div class="d-block__head"><span class="mono" style="color:var(--accent)">01</span><h3>Trailer</h3></div>
         <div class="d-trailer"><div class="d-trailer__poster">
-          <img src="${esc(backdrop)}" alt=""><span class="d-trailer__btn">${PLAY_ICON}</span></div></div></section>` : ''}
+          <img src="${esc(opt(backdrop, 1280))}" alt="" loading="lazy" decoding="async"><span class="d-trailer__btn">${PLAY_ICON}</span></div></div></section>` : ''}
 
       ${credits ? `<section class="d-block d-anim"><div class="d-block__head"><span class="mono" style="color:var(--accent)">02</span><h3>Credits</h3></div>
         <div class="d-credits">${credits}</div></section>` : ''}
@@ -1538,7 +1565,7 @@
         <div class="d-gallery">${galleryHtml}</div></section>` : ''}
 
       ${next && next.slug !== p.slug ? `<a class="d-next" data-next="${esc(next.slug)}">
-        <div class="d-next__bg"><img src="${esc(safeUrl(next.backdrop_url) || safeUrl(next.poster_url))}" alt=""></div>
+        <div class="d-next__bg"><img src="${esc(opt(safeUrl(next.backdrop_url) || safeUrl(next.poster_url)))}" alt="" loading="lazy" decoding="async"></div>
         <p class="mono">Next project</p><h3>${esc(next.title)}</h3></a>` : ''}
     `;
 
@@ -1671,7 +1698,7 @@
     const poster = e.target.closest('.d-poster');
     const heroBg = !poster && e.target.closest('.d-hero') && !e.target.closest('.d-hero__content, a, button') ? $('.d-hero__bg img', detail) : null;
     if (poster || heroBg) {
-      const src = poster ? $('img', poster).getAttribute('src') : heroBg.getAttribute('src');
+      const src = poster ? $('img', poster).dataset.full : heroBg.dataset.full;
       const covers = state.detailCover || [];
       gallery = [...covers, ...(state.detailGallery || [])];
       openLightbox(Math.max(0, covers.findIndex((c) => c.url === src)), poster ? $('img', poster) : heroBg);
@@ -1753,7 +1780,7 @@
       leadBox.innerHTML = `
         ${video ? `<button type="button" class="news__lead-media" data-news-video="${esc(video)}" aria-label="Watch: ${esc(lead.title)}">`
                 : `<a class="news__lead-media" ${link ? `href="${esc(link)}" target="_blank" rel="noopener"` : ''} aria-label="${esc(lead.title)}">`}
-          ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ''}
+          ${img ? `<img src="${esc(opt(img, 1000))}" alt="" loading="lazy" decoding="async">` : ''}
           ${video ? `<span class="news__play">${PLAY_ICON}</span>` : ''}
         ${video ? '</button>' : '</a>'}
         <div class="news__lead-body">
@@ -1769,7 +1796,7 @@
     const items = rest.filter((n) => n !== lead);
     const row = (n, i) => {
       const video = safeUrl(n.video_url), link = safeUrl(n.url), img = newsThumb(n);
-      const inner = `${img ? `<img class="news-row__thumb" src="${esc(img)}" alt="" loading="lazy">` : ''}
+      const inner = `${img ? `<img class="news-row__thumb" src="${esc(opt(img, 240))}" alt="" loading="lazy" decoding="async">` : ''}
         <span class="news-row__date">${esc(newsDate(n.published_at))}</span>
         <span class="news-row__outlet">${esc(n.outlet || '')}</span>
         <span class="news-row__title">${esc(n.title)}</span>
@@ -1839,7 +1866,7 @@
     const q = $('.founder__quote', box);
     q.textContent = s.founder_quote || ''; q.hidden = !s.founder_quote;
     const img = $('.founder__portrait img', box);
-    img.src = safeUrl(s.founder_photo_url) || safeUrl(s.about_image_url) || '';
+    img.src = opt(safeUrl(s.founder_photo_url) || safeUrl(s.about_image_url) || '', 700);
     img.alt = s.founder_name;
     // Claqueta con sus datos (como la que se usa en el set) y fecha de hoy
     $('.slate-dir', box).textContent = s.founder_name;
@@ -1911,7 +1938,7 @@
     detailScroll.innerHTML = `
       <article class="f-page" aria-labelledby="detail-title">
         <header class="f-hero">
-          <div class="f-hero__portrait"><img src="${esc(photo)}" alt="${esc(f.name)}"></div>
+          <div class="f-hero__portrait"><img src="${esc(opt(photo, 800))}" alt="${esc(f.name)}"></div>
           <span class="f-hero__scroll mono" aria-hidden="true">Scroll — the story</span>
           <div class="f-hero__text">
             <p class="f-hero__kicker mono"><i></i><span>${esc(f.role || '')}</span>
@@ -1929,7 +1956,7 @@
 
         ${bio ? `<section class="f-section f-bio">
           <aside class="f-bio__aside">
-            <img src="${esc(photo2)}" alt="${esc(f.name)}" loading="lazy">
+            <img src="${esc(opt(photo2, 800))}" alt="${esc(f.name)}" loading="lazy" decoding="async">
             <dl>
               ${f.role ? `<div><dt class="mono">Role</dt><dd>${esc(f.role)}</dd></div>` : ''}
               ${ds.length ? `<div><dt class="mono">Disciplines</dt><dd>${ds.map(esc).join(' · ')}</dd></div>` : ''}
@@ -2057,7 +2084,7 @@
       ? `<div class="lightbox__trailer">${trailerEmbed(m.url) || ''}</div>`
       : m.type === 'video'
       ? `<video src="${esc(responsiveVideo(m.url))}" controls autoplay playsinline></video>`
-      : `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}">`) + (m.caption ? `<figcaption>${esc(m.caption)}</figcaption>` : '');
+      : `<img src="${esc(opt(m.url, Math.min(innerWidth, 1920)))}" alt="${esc(m.caption || '')}">`) + (m.caption ? `<figcaption>${esc(m.caption)}</figcaption>` : '');
     $('.lightbox__count', lb).textContent = `${String(lbIndex + 1).padStart(2, '0')} / ${String(gallery.length).padStart(2, '0')}`;
     if (ANIM) gsap.fromTo(stage.firstElementChild, { opacity: 0, x: dir * 60 }, { opacity: 1, x: 0, duration: .5, ease: 'power3.out' });
   }
@@ -2118,8 +2145,7 @@
         Promise.all([
           heroReel.ready(), // primer video listo para reproducirse
           preloadImages([
-            ...(heroReel.urls?.length ? [] : [safeUrl(state.settings.hero_image_url)]), // imagen fija solo si no hay videos
-            ...state.projects.slice(0, 6).map((p) => safeUrl(p.poster_url))
+            ...(heroReel.urls?.length ? [] : [opt(state.settings.hero_image_url)]) // imagen fija solo si no hay videos
           ])
         ]),
         new Promise((r) => setTimeout(r, 6000)) // nunca esperar más de 6 s

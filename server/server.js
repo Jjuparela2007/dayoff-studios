@@ -50,6 +50,9 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/public'));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
+/* Imágenes optimizadas (más livianas, en WebP y al tamaño justo): /img/<ancho>/uploads/foto.jpg */
+app.use(require('./images')(ROOT));
+
 /* Archivos estáticos (con caché larga para medios subidos: tienen nombre único) */
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '30d', immutable: true }));
 // En desarrollo, sin caché: así cada cambio en HTML/CSS/JS se ve al recargar.
