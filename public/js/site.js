@@ -586,7 +586,19 @@
     if (!sec) return;
     const items = onsetItems();
     sec.hidden = !items.length;
-    $$('.nav__onset').forEach((a) => { a.hidden = !items.length; });
+    // Textos editables en el panel → Textos del sitio → "Galería de videos (Featured Work)".
+    // Si un texto se deja vacío, esa parte se oculta.
+    const st = state.settings || {};
+    const txt = (k, def) => String(st[k] ?? def).trim();
+    const title = txt('onset_title', 'Featured Work');
+    $('.onset__title', sec).textContent = title;
+    $('.onset__band', sec).hidden = !title;
+    $$('.nav__onset').forEach((a) => { a.hidden = !items.length; a.textContent = txt('onset_nav', title || 'Featured Work'); });
+    [['meter_left', '1\\400  ISO 400', '.meter__side--l'], ['meter_right', 'AWB  FPS 24  f1.8', '.meter__side--r']].forEach(([k, def, sel]) => {
+      const v = txt(k, def), side = $(sel, sec);
+      $('.meter__txt', side).textContent = v;
+      side.style.visibility = v ? '' : 'hidden';
+    });
     if (!items.length) return;
 
     const media = (m) => {

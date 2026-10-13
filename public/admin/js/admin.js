@@ -251,6 +251,11 @@
       ['hero_videos', 'Videos de portada (showreel en bucle infinito)', 'videos'],
       ['hero_clip_seconds', 'Segundos por clip (ej. 7; si el video es más corto, se ve completo)'],
       ['hero_image_url', 'Imagen de respaldo (se ve mientras carga el primer video o si no hay videos)', 'url']]],
+    ['Galería de videos (sección "Featured Work")', [
+      ['onset_title', 'Título de la sección (ej. Featured Work; si lo dejas vacío no se muestra la franja del título)'],
+      ['onset_nav', 'Nombre en el menú de arriba (ej. Featured Work)'],
+      ['meter_left', 'Rollo de cámara — texto de la izquierda (ej. 1\\400  ISO 400; vacío = se oculta)'],
+      ['meter_right', 'Rollo de cámara — texto de la derecha (ej. AWB  FPS 24  f1.8; vacío = se oculta)']]],
     ['Estudio', [['about_title', 'Título'], ['about_text', 'Texto (deja una línea en blanco entre párrafos)', 'textarea'], ['about_image_url', 'Imagen', 'url'],
       ['stat_1_value', 'Cifra 1'], ['stat_1_label', 'Etiqueta 1'], ['stat_2_value', 'Cifra 2'], ['stat_2_label', 'Etiqueta 2'], ['stat_3_value', 'Cifra 3'], ['stat_3_label', 'Etiqueta 3']]],
     ['Fundador / creador (aparece en "The studio" y tiene su propia página)', [

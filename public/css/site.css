@@ -242,6 +242,8 @@ section { position: relative; }
 /* ── On set: muro de videos del estudio (fondo negro, todos reproduciéndose, logo en cada cuadro) ── */
 .onset { background: #000; color: #fff; padding-bottom: clamp(60px, 8vw, 120px); --wall: min(1225px, 66vw); --gap: clamp(10px, 1.3vw, 22px); }
 .onset[hidden] { display: none; }
+.onset__band[hidden] { display: none; }
+.meter__txt { white-space: pre; }
 .onset__band { background: #f3f1ec; color: #0a0a0a; text-align: center; padding: clamp(16px, 1.6vw, 24px) 0 clamp(10px, 1vw, 14px); overflow: hidden; }
 .onset__title { margin: 0; font: 600 clamp(18px, 1.5vw, 24px)/1.1 var(--f-display); letter-spacing: .01em; text-transform: uppercase; }
 .onset__chev { display: block; width: 18px; height: 11px; margin: 8px auto 0; fill: none; stroke: currentColor; stroke-width: 2.6; }

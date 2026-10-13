@@ -71,6 +71,8 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
   }
 
   for (const [k, v] of [['hero_clip_seconds', '7'], ['preloader_tagline', 'SHOW YOURSELF'],
+    // Galería de videos: título, nombre en el menú y textos del rollo de cámara
+    ['onset_title', 'Featured Work'], ['onset_nav', 'Featured Work'], ['meter_left', '1\\400  ISO 400'], ['meter_right', 'AWB  FPS 24  f1.8'],
     // Redes nuevas del footer (con enlaces genéricos: cámbialos en el panel o déjalos vacíos para ocultarlas)
     ['facebook_url', 'https://facebook.com/'], ['linkedin_url', 'https://linkedin.com/'],
     ['x_url', 'https://x.com/'], ['tiktok_url', 'https://tiktok.com/'],
