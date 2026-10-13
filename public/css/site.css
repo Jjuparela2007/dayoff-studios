@@ -999,6 +999,15 @@ html[data-theme="light"] .spotlight {
   --line: rgba(236, 230, 218, .18); --accent: #d9a441; color: var(--ink); color-scheme: dark;
 }
 .spotlight { position: relative; background: #000; color: var(--ink); }
+.spotlight__intro {
+  display: grid; justify-items: center; align-content: center; gap: clamp(16px, 2vw, 26px); text-align: center;
+  min-height: 70vh; padding: clamp(80px, 12vh, 160px) var(--gutter) clamp(40px, 6vh, 80px); background: #000; color: #fff;
+}
+.spotlight__intro[hidden] { display: none; }
+.spotlight__intro-kicker { margin: 0; color: var(--accent); letter-spacing: .3em; }
+.spotlight__intro-text { margin: 0; max-width: 26ch; font: 500 clamp(28px, 3.6vw, 60px)/1.12 var(--f-display); letter-spacing: -.02em; }
+.spotlight__intro-text .split-word { display: inline-block; overflow: hidden; vertical-align: top; }
+.spotlight__intro-text .split-word > span { display: inline-block; }
 .spotlight__stage {
   position: relative; min-height: 100svh; overflow: hidden; isolation: isolate;
   display: flex; flex-direction: column; justify-content: center;

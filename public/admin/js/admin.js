@@ -247,6 +247,9 @@
   const SETTINGS_GROUPS = [
     ['Marca', [['site_name', 'Nombre del sitio'], ['slogan', 'Eslogan'], ['preloader_tagline', 'Frase bajo el logo en la pantalla de carga (ej. SHOW YOURSELF)'],
       ['logo_url', 'Logo en imagen (opcional; si está vacío se usa el logo vectorial, que es el que hace la animación de máscara)', 'url']]],
+    ['Último estreno (Latest release) — texto que aparece antes de la animación del estreno', [
+      ['latest_intro_kicker', 'Antetítulo pequeño (ej. Latest release)'],
+      ['latest_intro', 'Descripción (si la dejas vacía no se muestra; deja una línea en blanco para separar párrafos)', 'textarea']]],
     ['Portada (hero)', [['hero_kicker', 'Antetítulo'], ['hero_title', 'Título principal — usa *palabra* para resaltarla en dorado'],
       ['hero_videos', 'Videos de portada (showreel en bucle infinito)', 'videos'],
       ['hero_clip_seconds', 'Segundos por clip (ej. 7; si el video es más corto, se ve completo)'],

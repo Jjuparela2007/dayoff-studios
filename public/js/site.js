@@ -421,6 +421,12 @@
     const fig = $('.spotlight__poster', sec);
     fig.hidden = !poster;
     if (poster) { $('img', fig).src = poster; $('img', fig).alt = `${p.title} poster`; }
+    // Descripción antes de la animación (editable en el panel; si está vacía no se muestra)
+    const st = state.settings || {};
+    const intro = $('.spotlight__intro', sec), introText = String(st.latest_intro || '').trim();
+    intro.hidden = !introText;
+    $('.spotlight__intro-kicker', sec).textContent = String(st.latest_intro_kicker ?? 'Latest release').trim();
+    $('.spotlight__intro-text', sec).innerHTML = introText.split(/\n\s*\n/).map((t) => esc(t).replace(/\n/g, '<br>')).join('<br><br>');
     $('.spotlight__year', sec).textContent = p.year || '';
     $('.spotlight__presents-kind', sec).textContent = [p.category_name, p.year].filter(Boolean).join(' · ');
     $('.spotlight__title', sec).textContent = p.title;
@@ -1193,13 +1199,22 @@
     // Escritorio: la sección se fija; al hacer scroll aparece "DayOff Studios presents", el cuadro del
     // tráiler se expande desde el centro a pantalla completa y entran título, ficha, póster y créditos.
     // Móvil: entrada sencilla sin fijar (fijar en móvil se siente brusco).
+    // Descripción del estreno: las palabras suben y pasan de gris a blanco; se desvanece cuando arranca la escena
+    if (state.spotlight && !$('.spotlight__intro').hidden) {
+      const words = splitWords($('.spotlight__intro-text'));
+      gsap.from('.spotlight__intro-kicker', { opacity: 0, y: 20, duration: .9, ease: 'power3.out', scrollTrigger: { trigger: '.spotlight__intro', start: 'top 80%' } });
+      gsap.fromTo(words, { opacity: .18, yPercent: 40 }, { opacity: 1, yPercent: 0, stagger: .04, ease: 'none',
+        scrollTrigger: { trigger: '.spotlight__intro', start: 'top 80%', end: 'center 45%', scrub: true } });
+      gsap.to('.spotlight__intro > *', { opacity: 0, y: -40, ease: 'none',
+        scrollTrigger: { trigger: '.spotlight__intro', start: 'bottom 45%', end: 'bottom top', scrub: true } });
+    }
     if (state.spotlight) {
       ST.matchMedia({
         '(min-width: 861px)': () => {
           const words = splitWords($('.spotlight__title'));
           const tl = gsap.timeline({
             defaults: { ease: 'none' },
-            scrollTrigger: { trigger: '#latest', start: 'top top', end: '+=150%', pin: '.spotlight__stage', scrub: 1, anticipatePin: 1 }
+            scrollTrigger: { trigger: '.spotlight__stage', start: 'top top', end: '+=150%', pin: '.spotlight__stage', scrub: 1, anticipatePin: 1 }
           });
           tl.fromTo('.spotlight__frame', { clipPath: 'inset(22% 30% 22% 30% round 8px)' }, { clipPath: 'inset(0% 0% 0% 0% round 0px)', duration: 1, ease: 'power2.inOut' }, 0)
             .fromTo('.spotlight__media', { scale: 1.3 }, { scale: 1, duration: 1, ease: 'power2.inOut' }, 0)
