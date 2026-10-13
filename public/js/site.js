@@ -673,9 +673,12 @@
       // Entrada: la imagen llega con zoom (1.45 → 1.05) y un poco de parallax mientras la franja sube hasta arriba
       gsap.fromTo(media, { scale: 1.45, yPercent: -8 }, { scale: 1.05, yPercent: 6, ease: 'none',
         scrollTrigger: { trigger: b, start: 'top bottom', end: 'top top', scrub: true } });
-      // El título también se acerca desde grande y transparente
-      gsap.fromTo(body, { scale: 1.35, opacity: 0, yPercent: 40 }, { scale: 1, opacity: 1, yPercent: 0, ease: 'power1.out',
+      // El título se acerca desde grande…
+      gsap.fromTo(body, { scale: 1.35, yPercent: 40 }, { scale: 1, yPercent: 0, ease: 'power1.out',
         scrollTrigger: { trigger: b, start: 'top bottom', end: 'top 25%', scrub: true } });
+      // …y pasa de gris desenfocado a blanco nítido, como cuando la cámara hace foco
+      gsap.fromTo($('.cat-band__title', b), { color: 'rgba(255,255,255,.28)', filter: 'blur(10px)' }, { color: 'rgba(255,255,255,1)', filter: 'blur(0px)', ease: 'power1.in',
+        scrollTrigger: { trigger: b, start: 'top 55%', end: 'top 2%', scrub: true } });
       slideMeter($('.meter', b), b);
     });
     // Escritorio: cada franja se queda quieta y la siguiente sube encima; mientras tanto la de abajo se aleja
@@ -762,6 +765,7 @@
       gsap.fromTo(catview, { clipPath: from }, { clipPath: 'inset(0px 0px 0px 0px)', duration: 1.1, ease: 'expo.inOut', clearProps: 'clipPath' });
       gsap.fromTo('.catview__media', { scale: 1.05 }, { scale: 1.25, duration: 1.6, ease: 'power3.out' });
       gsap.fromTo('.catview__heading', { scale: .8, opacity: .4 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out', delay: .2 });
+      gsap.fromTo('.catview__title', { color: 'rgba(255,255,255,.28)', filter: 'blur(10px)' }, { color: 'rgba(255,255,255,1)', filter: 'blur(0px)', duration: 1.4, ease: 'power2.out', delay: .5, clearProps: 'filter' });
       gsap.from('.catview__close', { opacity: 0, rotate: -90, duration: .6, delay: .7 });
     }
     catviewMotion();
@@ -784,6 +788,8 @@
           scrollTrigger: { ...st, end: 'top top' } }));
         cvTweens.push(gsap.fromTo($('.pband__body', b), { y: 80, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out',
           scrollTrigger: { scroller: cvScroll, trigger: b, start: 'top 85%', end: 'top 35%', scrub: true } }));
+        cvTweens.push(gsap.fromTo($('.pband__title', b), { color: 'rgba(255,255,255,.28)', filter: 'blur(8px)' }, { color: 'rgba(255,255,255,1)', filter: 'blur(0px)', ease: 'power2.out',
+          scrollTrigger: { scroller: cvScroll, trigger: b, start: 'top 70%', end: 'top 15%', scrub: true } }));
       });
       ST.refresh();
     }
