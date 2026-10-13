@@ -251,8 +251,8 @@
       ['latest_intro_kicker', 'Antetítulo pequeño (ej. Latest release)'],
       ['latest_intro', 'Descripción (si la dejas vacía no se muestra; deja una línea en blanco para separar párrafos)', 'textarea']]],
     ['Portada (hero)', [['hero_kicker', 'Antetítulo'], ['hero_title', 'Título principal — usa *palabra* para resaltarla en dorado'],
-      ['hero_mode', 'Fondo de la portada', 'select', [['reel', 'Showreel — clips de video (MP4) en bucle con fundido'], ['embed', 'Un video de Vimeo']]],
-      ['hero_embed_url', 'Link de Vimeo (se reproduce de fondo, sin sonido y en bucle). Si el video no permite insertarse en otras páginas, se verá la imagen de respaldo'],
+      ['hero_mode', 'Fondo de la portada', 'select', [['reel', 'Showreel — clips de video (MP4) en bucle con fundido'], ['embed', 'Un video de YouTube o Vimeo']]],
+      ['hero_embed_url', 'Link de YouTube o Vimeo (se reproduce de fondo, sin sonido y en bucle). Si el video no permite insertarse en otras páginas, se verá la imagen de respaldo'],
       ['hero_videos', 'Videos de portada (showreel en bucle infinito)', 'videos'],
       ['hero_clip_seconds', 'Segundos por clip (ej. 7; si el video es más corto, se ve completo)'],
       ['hero_image_url', 'Imagen de respaldo (se ve mientras carga el primer video o si no hay videos)', 'url']]],
@@ -567,7 +567,7 @@
           <b>Fotos:</b> JPG o WebP de unos 2000 px de ancho (horizontales o verticales; el sitio las encuadra solo).<br>
           <b>Clips cortos (10 a 60 s):</b> súbelos como archivo MP4 (H.264), máximo 200 MB; mejor si pesan menos de 30 MB (en HandBrake: preset "Fast 1080p30").<br>
           <b>Videos largos (making of, entrevistas):</b> súbelos a YouTube o Vimeo y pega el link aquí: cargan más rápido y no ocupan espacio.<br>
-          <b>Portada</b> (opcional): imagen que se ve mientras carga el video; recomendada para links de Vimeo. Arrastra ⋮⋮ para ordenar: los primeros salen arriba.</p>
+          Arrastra ⋮⋮ para ordenar: los primeros salen arriba.</p>
         <div class="progress" id="clips-progress" hidden><span></span></div>
         <div class="rows" id="clip-rows" style="margin-top:14px"></div>
       </div>
@@ -576,12 +576,10 @@
     const rows = $('#clip-rows');
     const clipRow = (m = {}) => `<div class="row row--clip" draggable="true">
       <span class="handle" title="Arrastrar">⋮⋮</span>
-      <span class="clip-prev">${clipPreview(m.url, m.poster_url)}</span>
+      <span class="clip-prev">${clipPreview(m.url)}</span>
       <div class="clip-fields">
         <div class="clip-url"><input data-k="url" placeholder="Foto, archivo de video o link de YouTube / Vimeo" value="${esc(m.url)}">
           <button type="button" class="btn btn--ghost btn--sm" data-pick-row="url">Biblioteca</button></div>
-        <div class="clip-url"><input data-k="poster_url" placeholder="Portada (opcional)" value="${esc(m.poster_url)}">
-          <button type="button" class="btn btn--ghost btn--sm" data-pick-row="poster_url">Biblioteca</button></div>
         <input data-k="caption" placeholder="Pie en inglés (opcional, ej. Behind the scenes — TITO, 2024)" value="${esc(m.caption)}">
       </div>
       <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicado</label>
@@ -593,9 +591,9 @@
       if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay nada. Pulsa "Subir videos o fotos" o "+ Link de YouTube / Vimeo".</p>';
     };
     const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', clipRow(m)); count(); return rows.lastElementChild; };
-    const refreshPrev = (row) => { $('.clip-prev', row).innerHTML = clipPreview($('[data-k=url]', row).value.trim(), $('[data-k=poster_url]', row).value.trim()); };
+    const refreshPrev = (row) => { $('.clip-prev', row).innerHTML = clipPreview($('[data-k=url]', row).value.trim()); };
     const collect = () => $$('.row', rows).map((r) => ({
-      url: $('[data-k=url]', r).value.trim(), poster_url: $('[data-k=poster_url]', r).value.trim(),
+      url: $('[data-k=url]', r).value.trim(),
       caption: $('[data-k=caption]', r).value.trim(), published: $('[data-k=published]', r).checked ? 1 : 0
     })).filter((m) => m.url);
     const save = (btn, msg = 'Galería guardada') => run(btn, () => api('/api/admin/studio-photos', { method: 'PUT', body: collect() }), msg);
@@ -626,7 +624,7 @@
         refreshPrev(row);
       }
     });
-    rows.addEventListener('change', (e) => { if (/^(url|poster_url)$/.test(e.target.dataset.k || '')) refreshPrev(e.target.closest('.row')); });
+    rows.addEventListener('change', (e) => { if (e.target.dataset.k === 'url') refreshPrev(e.target.closest('.row')); });
     enableDragSort(rows);
     $('#clips-save').addEventListener('click', (e) => save(e.target));
   };
