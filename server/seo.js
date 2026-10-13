@@ -61,7 +61,7 @@ function organization(req, s) {
   const org = {
     '@context': 'https://schema.org', '@type': 'Organization', '@id': `${baseUrl(req)}/#organization`,
     name: site, url: `${baseUrl(req)}/`,
-    logo: abs(req, s.logo_url || '/img/favicon.svg'),
+    logo: abs(req, s.logo_url || '/img/icon-512.png'),
     description: clip(s.about_text || s.slogan, 300)
   };
   const same = socials(s);
