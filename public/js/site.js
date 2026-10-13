@@ -857,7 +857,7 @@
       }
       return `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}" loading="lazy" draggable="false">`;   // fotos antiguas
     };
-    const tile = (m, i, width) => `<button type="button" class="shot${isEmbed(m.url) ? ' shot--embed' : ''}" data-i="${i}"${width ? ` style="flex-grow:${width}"` : ''} aria-label="${esc('Play: ' + (m.caption || 'On set video ' + (i + 1)))}">
+    const tile = (m, i, width) => `<button type="button" class="shot${isEmbed(m.url) ? ' shot--embed' : ''}" data-i="${i}"${width ? ` style="flex-grow:${width}"` : ''} aria-label="${esc((isVideoFile(m.url) || isEmbed(m.url) ? 'Play: ' : 'View: ') + (m.caption || 'Featured work ' + (i + 1)))}">
         ${media(m)}
         <span class="shot__logo" aria-hidden="true">${brandMark()}</span>
         ${m.caption ? `<span class="shot__cap">${esc(m.caption)}</span>` : ''}
@@ -887,7 +887,7 @@
         if (!shot) return;
         gallery = onsetItems().map((m) => ({ type: isEmbed(m.url) ? 'embed' : isVideoFile(m.url) ? 'video' : 'image', url: m.url, caption: m.caption }));
         $$('video', sec).forEach((v) => v.pause());
-        openLightbox(+shot.dataset.i);
+        openLightbox(+shot.dataset.i, $('img, video', shot));
       });
       more.addEventListener('click', () => {
         onsetAll = true;

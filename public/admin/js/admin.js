@@ -477,17 +477,18 @@
   views.galeria = async () => {
     const list = await api('/api/admin/studio-photos');
     view.innerHTML = `
-      <div class="page-head"><div><h1>Galería del estudio</h1>
-        <p>Videos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "On set" (entre "Now Showing" y "Work"):
-           los archivos se reproducen solos y sin sonido mientras se ven, y al hacer clic se abren en grande con sonido.
-           Si no hay ninguno publicado, la sección no se muestra.</p></div></div>
+      <div class="page-head"><div><h1>Featured Work · videos y fotos</h1>
+        <p>Videos y fotos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "Featured Work":
+           los videos se reproducen solos y sin sonido mientras se ven; videos y fotos se abren en grande al hacer clic.
+           Puedes mezclarlos en el orden que quieras. Si no hay ninguno publicado, la sección no se muestra.</p></div></div>
       <div class="panel">
-        <div class="panel__head"><h2>Videos <small class="hint" id="clip-count"></small></h2>
+        <div class="panel__head"><h2>Videos y fotos <small class="hint" id="clip-count"></small></h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <label class="btn btn--primary btn--sm">Subir videos<input type="file" id="clips-upload" multiple hidden accept="video/mp4,video/webm,video/quicktime"></label>
+            <label class="btn btn--primary btn--sm">Subir videos o fotos<input type="file" id="clips-upload" multiple hidden accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,image/avif"></label>
             <button class="btn btn--ghost btn--sm" id="clips-link">+ Link de YouTube / Vimeo</button>
             <button class="btn btn--ghost btn--sm" id="clips-add">+ Desde biblioteca</button></div></div>
         <p class="hint">
+          <b>Fotos:</b> JPG o WebP de unos 2000 px de ancho (horizontales o verticales; el sitio las encuadra solo).<br>
           <b>Clips cortos (10 a 60 s):</b> súbelos como archivo MP4 (H.264), máximo 200 MB; mejor si pesan menos de 30 MB (en HandBrake: preset "Fast 1080p30").<br>
           <b>Videos largos (making of, entrevistas):</b> súbelos a YouTube o Vimeo y pega el link aquí: cargan más rápido y no ocupan espacio.<br>
           <b>Portada</b> (opcional): imagen que se ve mientras carga el video; recomendada para links de Vimeo. Arrastra ⋮⋮ para ordenar: los primeros salen arriba.</p>
@@ -501,11 +502,11 @@
       <span class="handle" title="Arrastrar">⋮⋮</span>
       <span class="clip-prev">${clipPreview(m.url, m.poster_url)}</span>
       <div class="clip-fields">
-        <div class="clip-url"><input data-k="url" placeholder="Archivo de video o link de YouTube / Vimeo" value="${esc(m.url)}">
+        <div class="clip-url"><input data-k="url" placeholder="Foto, archivo de video o link de YouTube / Vimeo" value="${esc(m.url)}">
           <button type="button" class="btn btn--ghost btn--sm" data-pick-row="url">Biblioteca</button></div>
         <div class="clip-url"><input data-k="poster_url" placeholder="Portada (opcional)" value="${esc(m.poster_url)}">
           <button type="button" class="btn btn--ghost btn--sm" data-pick-row="poster_url">Biblioteca</button></div>
-        <input data-k="caption" placeholder="Pie de video en inglés (opcional, ej. Behind the scenes — TITO, 2024)" value="${esc(m.caption)}">
+        <input data-k="caption" placeholder="Pie en inglés (opcional, ej. Behind the scenes — TITO, 2024)" value="${esc(m.caption)}">
       </div>
       <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicado</label>
       <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
@@ -513,7 +514,7 @@
     const count = () => {
       const n = $$('.row', rows).length;
       $('#clip-count').textContent = n ? `· ${n}` : '';
-      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay videos. Pulsa "Subir videos" o "+ Link de YouTube / Vimeo".</p>';
+      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay nada. Pulsa "Subir videos o fotos" o "+ Link de YouTube / Vimeo".</p>';
     };
     const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', clipRow(m)); count(); return rows.lastElementChild; };
     const refreshPrev = (row) => { $('.clip-prev', row).innerHTML = clipPreview($('[data-k=url]', row).value.trim(), $('[data-k=poster_url]', row).value.trim()); };
@@ -536,7 +537,7 @@
       bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
       if (!saved || !saved.length) return;
       saved.forEach((f) => append({ url: f.url }));
-      save(null, `${saved.length} video${saved.length > 1 ? 's' : ''} subido${saved.length > 1 ? 's' : ''} y guardado${saved.length > 1 ? 's' : ''}`);
+      save(null, `${saved.length} archivo${saved.length > 1 ? 's' : ''} subido${saved.length > 1 ? 's' : ''} y guardado${saved.length > 1 ? 's' : ''}`);
     });
     rows.addEventListener('click', async (e) => {
       if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); return; }
