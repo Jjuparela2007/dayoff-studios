@@ -104,7 +104,7 @@ async function home(req, res, next) {
     const site = s.site_name || 'DayOff Studios';
     const [p] = await query('SELECT backdrop_url, poster_url FROM projects WHERE published = 1 ORDER BY featured DESC, sort_order LIMIT 1').catch(() => []);
     render(req, res, { site,
-      title: `${site} — ${s.slogan || 'Film Production Company'}`,
+      title: (s.seo_title || '').trim() || `${site} — ${s.slogan || 'Film Production Company'}`,
       description: clip(s.seo_description || s.about_text || `${site}: film production company — feature films, short films, series, commercials and documentaries.`),
       image: abs(req, s.seo_image_url || s.hero_image_url || p?.backdrop_url || p?.poster_url),
       url: `${baseUrl(req)}/`,

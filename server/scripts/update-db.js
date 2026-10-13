@@ -83,6 +83,7 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
 
   for (const [k, v] of [['hero_clip_seconds', '7'], ['preloader_tagline', 'SHOW YOURSELF'],
     // Galería de videos: título, nombre en el menú y textos del rollo de cámara
+    ['seo_title', 'DAY OFF Studios | video and photography production company | New York, NY, USA'],
     ['latest_intro_kicker', 'Latest release'], ['latest_intro', ''],
     // Fondo de la portada: 'reel' (clips MP4) o 'embed' (un video de YouTube/Vimeo)
     ['hero_embed_url', ''],

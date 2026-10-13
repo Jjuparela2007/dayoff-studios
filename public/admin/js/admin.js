@@ -274,6 +274,7 @@
     ['Marca', [['site_name', 'Nombre del sitio'], ['slogan', 'Eslogan'], ['preloader_tagline', 'Frase bajo el logo en la pantalla de carga (ej. SHOW YOURSELF)'],
       ['logo_url', 'Logo en imagen (opcional; si está vacío se usa el logo vectorial, que es el que hace la animación de máscara)', 'url']]],
     ['Google y redes sociales (cómo se ve el sitio en los resultados de búsqueda y al compartir el link)', [
+      ['seo_title', 'Título para Google y la pestaña del navegador (~60 caracteres, en inglés; ej. DAY OFF Studios | video and photography production company | New York, NY, USA). Si lo dejas vacío se usa "Nombre del sitio — Eslogan"'],
       ['seo_description', 'Descripción para Google (1–2 frases, ~150 caracteres, en inglés; ej. "DayOff Studios is a New York film production company…"). Si la dejas vacía se usa el texto de "Estudio"', 'textarea'],
       ['seo_image_url', 'Imagen al compartir el link de la portada en WhatsApp, Instagram, LinkedIn… (horizontal 1200×630). Si la dejas vacía se usa la imagen de respaldo del hero', 'url']]],
     ['Último estreno (Latest release) — texto que aparece antes de la animación del estreno', [

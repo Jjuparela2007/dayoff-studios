@@ -413,9 +413,15 @@
     });
   }
 
+  // Título de la pestaña en la portada: el "Título para Google" del panel, o "Nombre — Eslogan"
+  function homeTitle() {
+    const s = state.settings || {};
+    return (s.seo_title || '').trim() || `${s.site_name || 'DayOff Studios'} — ${s.slogan || 'Film Production Company'}`;
+  }
+
   function applySettings() {
     const s = state.settings;
-    document.title = `${s.site_name || 'DayOff Studios'} — ${s.slogan || 'Film Production Company'}`;
+    document.title = homeTitle();
 
     $$('[data-setting]').forEach((el) => {
       const val = s[el.dataset.setting] ?? '';
@@ -1719,7 +1725,7 @@
     detailScroll.innerHTML = '';
     if (!state.catOpen) document.body.classList.remove('is-locked');
     state.detailOpen = false;
-    document.title = `${state.settings.site_name || 'DayOff Studios'} — ${state.settings.slogan || ''}`;
+    document.title = homeTitle();
     if (push) history.pushState({}, '', '/');
     await curtain.out();
     if (lastFocus) { lastFocus.focus({ preventScroll: true }); lastFocus = null; }
