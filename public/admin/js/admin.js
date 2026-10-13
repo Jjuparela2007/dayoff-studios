@@ -301,13 +301,13 @@
       ['founder_quote', 'Frase / cita destacada'],
       ['founder_teaser', 'Texto corto para la sección del estudio', 'textarea'],
       ['founder_bio', 'Biografía completa para su página (deja una línea en blanco entre párrafos)', 'textarea'],
-      ['founder_milestones', 'Trayectoria: una línea por hito con el formato  Año | Descripción  (ej. 2014 | Funda DayOff Studios)', 'textarea']]],
+      ['founder_milestones', 'Trayectoria: una línea por hito con el formato  Año | Descripción  (ej. 2014 | Founds DayOff Studios)', 'textarea']]],
     ['Contacto', [['contact_title', 'Título — usa *palabra* para resaltarla en dorado'], ['contact_text', 'Texto', 'textarea'], ['contact_email', 'Email'], ['contact_phone', 'Teléfono'], ['contact_address', 'Dirección']]],
     ['Redes y pie (deja vacío el enlace de una red para ocultar su ícono)', [
       ['facebook_url', 'Facebook'], ['instagram_url', 'Instagram'], ['linkedin_url', 'LinkedIn'], ['x_url', 'X (Twitter)'],
       ['youtube_url', 'YouTube'], ['vimeo_url', 'Vimeo'], ['tiktok_url', 'TikTok'],
       ['extra_socials', 'Otras redes (IMDb, Spotify, WhatsApp, Threads, Behance, Pinterest, Letterboxd…)', 'socials'],
-      ['footer_text', 'Copyright (el año se añade solo: "DayOff Studios. Todos los derechos reservados.")']]]
+      ['footer_text', 'Copyright, en inglés (el año se añade solo; ej. "DayOff Studios. All rights reserved.")']]]
   ];
 
   /* ── Lista de videos del hero (se guarda como JSON en el ajuste hero_videos) ── */
@@ -863,7 +863,7 @@
           ${[['reparto', 'Reparto'], ['artistas', 'Artistas'], ['equipo', 'Equipo técnico']].map(([v, l]) => `<option value="${v}" ${c.department === v ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
         <input data-k="name" list="people-list" placeholder="Nombre" value="${esc(person ? person.name : c.name)}">
-        <input data-k="role" placeholder="Rol (ej. Protagonista, Montaje)" value="${esc(c.role)}">
+        <input data-k="role" placeholder="Rol en inglés (ej. Lead, Editor)" value="${esc(c.role)}">
         <button class="btn btn--danger btn--sm" data-remove>×</button>
       </div>`;
     };
