@@ -11,6 +11,8 @@
  *  Personas     GET/POST /api/admin/people          PUT/DELETE /api/admin/people/:id
  *  Archivos     GET/POST /api/admin/uploads         DELETE /api/admin/uploads/:id
  *               GET /api/admin/uploads/config · GET /api/admin/uploads/signature · POST /api/admin/uploads/register (Cloudinary)
+ *  Disco        GET /api/admin/storage              (espacio usado en /uploads)
+ *  Respaldo     GET /api/admin/backup[?files=1]     (.json con el contenido · .zip con contenido + archivos)
  */
 const router = require('express').Router();
 const path = require('path');
@@ -394,6 +396,82 @@ router.delete('/uploads/:id', asyncH(async (req, res) => {
   }
   await query('DELETE FROM uploads WHERE id = ?', [row.id]);
   res.json({ ok: true });
+}));
+
+/* ─────────────── Espacio en disco y respaldo ─────────────── */
+
+const DISK_LIMIT_GB = Number(process.env.DISK_LIMIT_GB || 5);   // tamaño del volumen de Railway
+// Tablas que se respaldan (la de admins NO: contiene las contraseñas cifradas)
+const BACKUP_TABLES = ['settings', 'categories', 'projects', 'people', 'credits', 'media', 'uploads',
+  'project_slugs', 'news', 'studio_photos', 'category_photos'];
+
+/** Recorre una carpeta y devuelve [{ rel, size }] de todos sus archivos. */
+function walk(dir, base = dir, out = []) {
+  let entries = [];
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full, base, out);
+    else if (e.isFile() && e.name !== '.gitkeep') {
+      try { out.push({ rel: path.relative(base, full).split(path.sep).join('/'), size: fs.statSync(full).size }); } catch { /* archivo borrado mientras se leía */ }
+    }
+  }
+  return out;
+}
+
+router.get('/storage', asyncH(async (req, res) => {
+  const files = walk(UPLOAD_DIR);
+  const isCache = (f) => f.rel.startsWith('.cache/');
+  const media = files.filter((f) => !isCache(f));
+  const cache = files.filter(isCache).reduce((a, f) => a + f.size, 0);
+  const used = media.reduce((a, f) => a + f.size, 0);
+  let names = {};
+  try {
+    const rows = await query('SELECT filename, original_name FROM uploads');
+    names = Object.fromEntries(rows.map((r) => [r.filename, r.original_name]));
+  } catch { /* sin tabla */ }
+  const biggest = media.sort((a, b) => b.size - a.size).slice(0, 5)
+    .map((f) => ({ url: `/uploads/${f.rel}`, name: names[f.rel] || f.rel, size: f.size }));
+  res.json({ used, cache, total: used + cache, files: media.length, limit: DISK_LIMIT_GB * 1024 ** 3, biggest });
+}));
+
+async function backupData() {
+  const data = { app: 'dayoff-studio', created_at: new Date().toISOString(), tables: {} };
+  for (const t of BACKUP_TABLES) {
+    // eslint-disable-next-line no-await-in-loop
+    data.tables[t] = await query(`SELECT * FROM ${t}`).catch(() => []);
+  }
+  return data;
+}
+
+// ?files=1 → .zip con el contenido (contenido.json) + todos los archivos subidos. Sin files → solo el .json (liviano).
+router.get('/backup', asyncH(async (req, res) => {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const data = await backupData();
+  const json = JSON.stringify(data, null, 2);
+  if (req.query.files !== '1') {
+    res.attachment(`dayoff-respaldo-${stamp}.json`).type('application/json').send(json);
+    return;
+  }
+  const archiver = require('archiver');
+  const zip = archiver('zip', { zlib: { level: 6 } });
+  res.attachment(`dayoff-respaldo-completo-${stamp}.zip`).type('application/zip');
+  res.set('Cache-Control', 'no-store');
+  zip.on('warning', (e) => console.warn('respaldo:', e.message));
+  zip.on('error', (e) => { console.error('respaldo:', e); res.destroy(e); });
+  req.on('close', () => { if (!res.writableEnded) zip.abort(); });
+  zip.pipe(res);
+  zip.append(json, { name: 'contenido.json' });
+  zip.append(`Respaldo de DayOff Studios — ${data.created_at}\n\n`
+    + '· contenido.json: textos, categorías, proyectos, créditos, personas, news y galerías (todo lo del panel).\n'
+    + '· uploads/: todas las imágenes y videos subidos desde el panel (van en /uploads del servidor).\n', { name: 'LEEME.txt' });
+  for (const f of walk(UPLOAD_DIR)) {
+    if (f.rel.startsWith('.cache/')) continue;   // miniaturas optimizadas: se regeneran solas
+    // los videos/imágenes ya vienen comprimidos: se guardan tal cual (más rápido)
+    const store = /\.(mp4|mov|webm|m4v|jpe?g|png|webp|avif|gif|zip)$/i.test(f.rel);
+    zip.file(path.join(UPLOAD_DIR, f.rel), { name: `uploads/${f.rel}`, store });
+  }
+  await zip.finalize();
 }));
 
 /* ─────────────── Helpers ─────────────── */

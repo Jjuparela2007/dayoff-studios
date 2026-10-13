@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scene not found — DayOff Studios</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a0908">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <style>
+    @font-face { font-family: 'Inter Tight'; font-weight: 100 900; font-display: swap; src: url('/fonts/inter-tight-latin-wght-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'JetBrains Mono'; font-weight: 400; font-display: swap; src: url('/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2'); }
+    :root { --bg: #0a0908; --ink: #ece6da; --dim: #8a847a; --line: rgba(236,230,218,.14); --accent: #d9a441; --accent-2: #b8432f; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink); overflow: hidden;
+      font-family: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+      display: grid; place-items: center; text-align: center; padding: 24px;
+    }
+    /* grano de película */
+    body::before {
+      content: ''; position: fixed; inset: -50%; pointer-events: none; opacity: .07;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grain 1s steps(6) infinite;
+    }
+    @keyframes grain { 0%{transform:translate(0,0)} 25%{transform:translate(-5%,3%)} 50%{transform:translate(4%,-4%)} 75%{transform:translate(-3%,-2%)} 100%{transform:translate(2%,4%)} }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+    .frame {
+      position: fixed; inset: clamp(14px, 3vw, 32px); border: 1px solid var(--line); pointer-events: none;
+    }
+    .frame span { position: absolute; padding: 10px 14px; }
+    .frame .tl { top: 0; left: 0; } .frame .tr { top: 0; right: 0; } .frame .bl { bottom: 0; left: 0; } .frame .br { bottom: 0; right: 0; }
+    .rec::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); margin-right: 8px; vertical-align: 1px; animation: blink 1.2s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    main { position: relative; max-width: 760px; }
+    .code { font-size: clamp(110px, 26vw, 300px); font-weight: 800; line-height: .85; letter-spacing: -.05em; margin: 0;
+      color: rgba(236,230,218,.07); }
+    h1 { font-size: clamp(30px, 6vw, 64px); font-weight: 600; letter-spacing: -.03em; margin: 18px 0 12px; }
+    h1 em { font-style: normal; color: var(--accent); }
+    p { color: var(--dim); font-size: 17px; line-height: 1.5; margin: 0 auto 34px; max-width: 420px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 12px; padding: 16px 28px; border: 1px solid var(--ink); border-radius: 999px;
+      color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; transition: background .3s, color .3s;
+    }
+    .btn:hover, .btn:focus-visible { background: var(--ink); color: var(--bg); outline: none; }
+    .btn svg { width: 16px; height: 16px; }
+    @media (prefers-reduced-motion: reduce) { body::before, .rec::before { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="frame" aria-hidden="true">
+    <span class="tl mono rec">Rec</span><span class="tr mono">Take 404</span>
+    <span class="bl mono">1\400 &nbsp;ISO 400</span><span class="br mono">AWB &nbsp;FPS 24 &nbsp;f1.8</span>
+  </div>
+  <main>
+    <div class="code" aria-hidden="true">404</div>
+    <h1>Scene <em>not found</em></h1>
+    <p>This page ended up on the cutting room floor. It may have moved, or it never made the final cut.</p>
+    <a class="btn" href="/">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+      Back to the studio
+    </a>
+  </main>
+</body>
+</html>

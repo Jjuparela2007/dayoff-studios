@@ -227,8 +227,9 @@
 
   /* ═════════════ VISTA: Resumen ═════════════ */
   views.dashboard = async () => {
-    const [projects, categories, people, uploads, settings] = await Promise.all([
-      api('/api/admin/projects'), api('/api/admin/categories'), api('/api/admin/people'), api('/api/admin/uploads'), api('/api/admin/settings')
+    const [projects, categories, people, uploads, settings, disk] = await Promise.all([
+      api('/api/admin/projects'), api('/api/admin/categories'), api('/api/admin/people'), api('/api/admin/uploads'), api('/api/admin/settings'),
+      api('/api/admin/storage').catch(() => null)
     ]);
     view.innerHTML = `
       <div class="page-head"><div><h1>Bienvenido</h1><p>Gestiona el contenido de DayOff Studio.</p></div>
@@ -240,8 +241,33 @@
         <div class="stat"><b>${uploads.length}</b><span class="mono">Archivos</span></div>
       </div>
       <div class="panel"><div class="panel__head"><h2>Últimos proyectos</h2><a class="btn btn--ghost btn--sm" href="#proyectos">Ver todos</a></div>
-        ${projectTable(projects.slice(0, 6), settings.spotlight_project_id)}</div>`;
+        ${projectTable(projects.slice(0, 6), settings.spotlight_project_id)}</div>
+      ${disk ? diskPanel(disk) : ''}
+      <div class="panel"><div class="panel__head"><h2>Respaldo</h2></div>
+        <p class="hint" style="margin:0 0 14px">Descarga una copia de todo lo del panel para guardarla en tu computador o en Drive. Recomendado una vez al mes o antes de cambios grandes.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn--primary btn--sm" href="/api/admin/backup?files=1" download data-backup>Descargar respaldo completo (.zip)</a>
+          <a class="btn btn--ghost btn--sm" href="/api/admin/backup" download>Solo textos y contenido (.json)</a>
+        </div>
+        <p class="hint" style="margin:12px 0 0">El completo incluye todas las imágenes y videos subidos${disk ? ` (~${bytes(disk.used)})` : ''}, así que puede tardar varios minutos en descargarse. El .json pesa muy poco: textos, proyectos, créditos, categorías, news y galerías (sin las contraseñas).</p>
+      </div>`;
+    const b = view.querySelector('[data-backup]');
+    if (b) b.addEventListener('click', () => toast('Preparando el respaldo… la descarga empieza en unos segundos'));
   };
+
+  const bytes = (b) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(2) + ' GB' : b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB');
+  function diskPanel(d) {
+    const pct = Math.min(100, (d.total / d.limit) * 100);
+    const level = pct >= 90 ? 'is-danger' : pct >= 75 ? 'is-warn' : '';
+    return `<div class="panel disk ${level}"><div class="panel__head"><h2>Espacio en disco</h2>
+        <span class="mono">${bytes(d.total)} de ${bytes(d.limit)} · ${pct < 1 && pct > 0 ? '<1' : Math.round(pct)}%</span></div>
+      <div class="disk__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><span style="width:${pct.toFixed(2)}%"></span></div>
+      <p class="hint" style="margin:10px 0 0">${d.files} archivos subidos (${bytes(d.used)})${d.cache ? ` + ${bytes(d.cache)} de imágenes optimizadas automáticas` : ''}. Quedan <b>${bytes(Math.max(0, d.limit - d.total))}</b> libres.
+        ${pct >= 75 ? ' Te estás quedando sin espacio: borra en la Biblioteca los videos que ya no uses, o amplía el volumen en Railway.' : ''}</p>
+      ${d.biggest.length ? `<h3 class="mono" style="margin:18px 0 8px">Los que más pesan</h3>
+        <ul class="disk__list">${d.biggest.map((f) => `<li><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a><span class="mono">${bytes(f.size)}</span></li>`).join('')}</ul>` : ''}
+    </div>`;
+  }
 
   /* ═════════════ VISTA: Textos del sitio ═════════════ */
   const SETTINGS_GROUPS = [

@@ -20,6 +20,21 @@ const app = express();
 const ROOT = path.join(__dirname, '..');
 app.set('trust proxy', 1); // necesario detrás de Nginx / hosting para el rate-limit por IP
 
+/* Dominio oficial: si en Railway existe la variable PUBLIC_URL (ej. https://www.dayoffstudios.net), quien entre por
+   otra dirección (…up.railway.app, o el dominio sin "www") se envía a la oficial con un 301 permanente.
+   Así Google ve UNA sola dirección del sitio. Sin la variable, no se redirige nada. */
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+let PUBLIC_HOST = '';
+try { PUBLIC_HOST = PUBLIC_URL ? new URL(PUBLIC_URL).host.toLowerCase() : ''; } catch { console.warn('⚠ PUBLIC_URL no es una dirección válida:', PUBLIC_URL); }
+if (PUBLIC_HOST) {
+  app.use((req, res, next) => {
+    const host = String(req.get('host') || '').toLowerCase();
+    // Solo visitas normales (GET/HEAD); en local (localhost) nunca se redirige
+    if (!host || host === PUBLIC_HOST || /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) || !['GET', 'HEAD'].includes(req.method)) return next();
+    res.redirect(301, PUBLIC_URL + req.originalUrl);
+  });
+}
+
 /* Cabeceras de seguridad. La CSP permite GSAP (cdnjs), Google Fonts,
    imágenes/videos externos por HTTPS (CDN) y tráileres de YouTube/Vimeo. */
 app.use(helmet({
@@ -94,6 +109,9 @@ app.get('/sitemap.xml', async (req, res, next) => {
 /* Ficha de proyecto con URL propia: /project/my-film (también acepta la ruta antigua /proyecto/) → misma página, el JS abre la ficha */
 app.get(['/project/:slug', '/proyecto/:slug'], seo.project);
 app.get('/director/:slug', seo.director);
+
+/* Cualquier otra dirección → página 404 propia ("Scene not found") */
+app.use((req, res) => seo.notFound(req, res));
 
 /* Manejador central de errores */
 // eslint-disable-next-line no-unused-vars

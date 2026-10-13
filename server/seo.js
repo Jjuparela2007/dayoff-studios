@@ -19,6 +19,14 @@ const { slugify } = require('./utils');
 
 const FOUNDER_DEFAULTS = require('./scripts/founder-defaults');
 const INDEX = path.join(__dirname, '..', 'public', 'index.html');
+const PAGE_404 = path.join(__dirname, '..', 'public', '404.html');
+
+/** Página 404 propia ("Scene not found"), con el estado HTTP correcto. */
+function notFound(req, res) {
+  res.status(404).set('Cache-Control', 'no-cache');
+  if (/text\/html/.test(req.get('accept') || '')) return res.sendFile(PAGE_404);   // navegadores; imágenes/videos que faltan → 404 simple
+  res.type('text/plain').send('Not found');
+}
 const PROD = process.env.NODE_ENV === 'production';
 let indexCache = null;
 const readIndex = () => (PROD && indexCache) || (indexCache = fs.readFileSync(INDEX, 'utf8'));
@@ -105,8 +113,7 @@ async function project(req, res, next) {
     if (!p) {   // slug antiguo (se cambió el título) → redirección permanente al actual
       const [old] = await query('SELECT p.slug FROM project_slugs ps JOIN projects p ON p.id = ps.project_id WHERE ps.slug = ? AND p.published = 1', [slug]).catch(() => []);
       if (old) return res.redirect(301, `/project/${encodeURIComponent(old.slug)}`);
-      res.status(404);              // no existe: se muestra la portada, pero Google recibe "404" (no la indexa como página)
-      return home(req, res, next);
+      return notFound(req, res);    // no existe → página "Scene not found" con estado 404 (Google no la indexa)
     }
     const url = `${baseUrl(req)}/project/${encodeURIComponent(p.slug)}`;
     const image = abs(req, p.poster_url || p.backdrop_url);          // póster para Google (Movie)
@@ -184,4 +191,4 @@ async function legacy(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { home, project, director, legacy };
+module.exports = { home, project, director, legacy, notFound };
