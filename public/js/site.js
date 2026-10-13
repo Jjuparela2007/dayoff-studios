@@ -1415,6 +1415,10 @@
     const looksVideo = (u) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u) || /res\.cloudinary\.com\/[^/]+\/video\//.test(u);
     gallery = p.media.map((m) => ({ ...m, url: safeUrl(m.url) })).filter((m) => m.url)
       .map((m) => ({ ...m, type: m.type === 'video' || looksVideo(m.url) ? 'video' : 'image' }));
+    state.detailGallery = gallery;
+    // Póster e imagen principal: al hacer clic se abren en el visor con zoom (y con flechas se sigue a la galería)
+    state.detailCover = [safeUrl(p.poster_url), safeUrl(p.backdrop_url)].filter((u, k, arr) => u && arr.indexOf(u) === k)
+      .map((url) => ({ type: 'image', url, caption: p.title }));
     // Los videos se cargan y reproducen solos al aparecer en pantalla (ver autoplayGallery)
     const galleryHtml = gallery.map((m, i) => `
       <figure data-index="${i}"${m.type === 'video' ? ' class="is-video"' : ''}>
@@ -1590,7 +1594,16 @@
     const person = e.target.closest('[data-person]');
     if (person) { openBio(JSON.parse(person.dataset.person)); return; }
     const fig = e.target.closest('.d-gallery figure');
-    if (fig) openLightbox(+fig.dataset.index);
+    if (fig) { gallery = state.detailGallery || gallery; openLightbox(+fig.dataset.index, $('img, video', fig)); return; }
+    // Póster o imagen principal de la ficha → visor con zoom desde donde está la imagen
+    const poster = e.target.closest('.d-poster');
+    const heroBg = !poster && e.target.closest('.d-hero') && !e.target.closest('.d-hero__content, a, button') ? $('.d-hero__bg img', detail) : null;
+    if (poster || heroBg) {
+      const src = poster ? $('img', poster).getAttribute('src') : heroBg.getAttribute('src');
+      const covers = state.detailCover || [];
+      gallery = [...covers, ...(state.detailGallery || [])];
+      openLightbox(Math.max(0, covers.findIndex((c) => c.url === src)), poster ? $('img', poster) : heroBg);
+    }
   });
   addEventListener('popstate', () => {
     const m = location.pathname.match(/^\/(?:project|proyecto)\/([^/]+)/);
@@ -1976,7 +1989,21 @@
     $('.lightbox__count', lb).textContent = `${String(lbIndex + 1).padStart(2, '0')} / ${String(gallery.length).padStart(2, '0')}`;
     if (ANIM) gsap.fromTo(stage.firstElementChild, { opacity: 0, x: dir * 60 }, { opacity: 1, x: 0, duration: .5, ease: 'power3.out' });
   }
-  function openLightbox(i) { lbIndex = i; lb.hidden = false; showLightbox(); }
+  function openLightbox(i, fromEl) {
+    lbIndex = i; lb.hidden = false; showLightbox();
+    // Zoom: la imagen sale desde donde estaba (póster, portada o miniatura) hasta su tamaño en el visor
+    const to = $('.lightbox__stage', lb).firstElementChild;
+    if (!ANIM || !fromEl || !to) return;
+    const run = () => {
+      const a = fromEl.getBoundingClientRect(), b = to.getBoundingClientRect();
+      if (!b.width || !a.width) return;
+      gsap.killTweensOf(to);
+      gsap.fromTo(to, { x: (a.left + a.width / 2) - (b.left + b.width / 2), y: (a.top + a.height / 2) - (b.top + b.height / 2), scale: Math.min(a.width / b.width, a.height / b.height), opacity: 1 },
+        { x: 0, y: 0, scale: 1, duration: .75, ease: 'expo.out', clearProps: 'transform' });
+      gsap.fromTo(lb, { backgroundColor: 'rgba(5,5,4,0)' }, { backgroundColor: 'rgba(5,5,4,.96)', duration: .5, clearProps: 'backgroundColor' });
+    };
+    if (to.tagName === 'IMG' && !to.complete) to.addEventListener('load', run, { once: true }); else run();
+  }
   const closeLightbox = () => { lb.hidden = true; lb.classList.remove('is-trailer'); $('.lightbox__stage', lb).innerHTML = ''; onsetPlayback(); };
   /** Tráiler a pantalla completa (desde el estreno), sin abrir la ficha. */
   function openTrailer(url) {

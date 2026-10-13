@@ -735,6 +735,9 @@ a.laurel:hover .laurel__title { color: var(--accent); }
 .d-hero__content { position: relative; z-index: 2; padding: 0 var(--gutter) clamp(30px, 5vw, 70px); width: 100%; display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 4vw, 60px); align-items: end; }
 .d-poster { width: clamp(120px, 16vw, 250px); aspect-ratio: 2/3; overflow: hidden; border-radius: 2px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
 .d-poster img { width: 100%; height: 100%; object-fit: cover; }
+.d-poster, .d-hero__bg { cursor: zoom-in; }
+.d-poster img { transition: transform .8s var(--ease-out); }
+.d-poster:hover img { transform: scale(1.04); }
 .d-kicker { color: var(--accent); margin: 0 0 14px; }
 .d-title { font: 400 clamp(44px, 8vw, 132px)/.92 var(--f-display); letter-spacing: -.02em; margin: 0; }
 .d-tagline { font: 400 clamp(18px, 1.8vw, 26px)/1.3 var(--f-display); color: var(--ink-dim); margin: 16px 0 0; }
