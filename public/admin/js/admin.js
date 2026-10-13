@@ -252,7 +252,7 @@
       ['latest_intro', 'Descripción (si la dejas vacía no se muestra; deja una línea en blanco para separar párrafos)', 'textarea']]],
     ['Portada (hero)', [['hero_kicker', 'Antetítulo'], ['hero_title', 'Título principal — usa *palabra* para resaltarla en dorado'],
       ['hero_mode', 'Fondo de la portada', 'select', [['reel', 'Showreel — clips de video (MP4) en bucle con fundido'], ['embed', 'Un video de Vimeo']]],
-      ['hero_embed_url', 'Link de YouTube o Vimeo (se reproduce de fondo, sin sonido y en bucle). Si el video no permite insertarse en otras páginas, se verá la imagen de respaldo'],
+      ['hero_embed_url', 'Link de Vimeo (se reproduce de fondo, sin sonido y en bucle). Si el video no permite insertarse en otras páginas, se verá la imagen de respaldo'],
       ['hero_videos', 'Videos de portada (showreel en bucle infinito)', 'videos'],
       ['hero_clip_seconds', 'Segundos por clip (ej. 7; si el video es más corto, se ve completo)'],
       ['hero_image_url', 'Imagen de respaldo (se ve mientras carga el primer video o si no hay videos)', 'url']]],
