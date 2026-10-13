@@ -167,9 +167,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero__embed { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .hero__embed iframe {
   position: absolute; top: 50%; left: 50%; width: max(100%, 177.78vh); height: max(100%, 56.25vw);
-  border: 0; transform: translate(-50%, -50%) scale(1.18); opacity: 0; transition: opacity 1.2s ease;
+  border: 0; transform: translate(-50%, -50%) scale(1.3); opacity: 0; transition: opacity .6s ease;
 }
-.hero__embed iframe.is-ready { opacity: 1; }
+.hero__embed iframe.is-ready { opacity: 1; transition-duration: 1.4s; }
 @keyframes kenburns { from { transform: scale(1.15) translate(0, 0); } to { transform: scale(1.28) translate(-2%, -2%); } }
 /* Sombra suave: arriba para que se lea el menú, abajo para el título */
 .hero__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,.55) 0%, rgba(10,9,8,0) 22%, rgba(10,9,8,0) 50%, rgba(10,9,8,.75) 100%); }

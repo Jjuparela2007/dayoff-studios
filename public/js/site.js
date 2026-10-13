@@ -410,7 +410,7 @@
       const box = document.createElement('div');
       box.className = 'hero__embed';
       media.append(box);
-      backgroundTrailer(box, heroEmbed);
+      backgroundTrailer(box, heroEmbed, { revealDelay: 2200 });
     } else {
       heroReel.start(videos.filter((u) => !/(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u)), image, parseFloat(s.hero_clip_seconds) || 7);
     }
@@ -500,7 +500,7 @@
    * Si YouTube/Vimeo no lo permiten (inserción desactivada, error, bloqueo), queda la imagen y nunca
    * aparece la pantalla de error del reproductor. No se carga con "ahorro de datos" ni movimiento reducido.
    */
-  function backgroundTrailer(box, url) {
+  function backgroundTrailer(box, url, { revealDelay = 400 } = {}) {
     url = safeUrl(url);
     if (!url || REDUCED || navigator.connection?.saveData) return;
     let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
@@ -528,7 +528,11 @@
     f.setAttribute('allow', 'autoplay; encrypted-media');
     f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
 
-    const show = () => { if (!f.classList.contains('is-ready')) setTimeout(() => f.classList.add('is-ready'), 400); };
+    // Se muestra solo cuando lleva un momento reproduciendo: así no se ven los íconos que YouTube enseña
+    // al arrancar (play, pausa, "siguiente"). Si se detiene, carga o vuelve a empezar el bucle, se oculta otra vez.
+    let showT = null;
+    const show = () => { if (f.classList.contains('is-ready') || showT) return; showT = setTimeout(() => { showT = null; f.classList.add('is-ready'); }, revealDelay); };
+    const hide = () => { clearTimeout(showT); showT = null; f.classList.remove('is-ready'); };
     const onMsg = (e) => {
       if (e.source !== f.contentWindow) return;
       let d = e.data;
@@ -537,6 +541,7 @@
       // YouTube: playerState 1 = reproduciendo · Vimeo: evento "play"
       const ytState = d.info && typeof d.info === 'object' ? d.info.playerState : undefined;
       if (ytState === 1 || d.event === 'play' || d.event === 'playProgress') show();
+      else if (ytState === 0 || ytState === 2 || ytState === 3 || ytState === -1 || d.event === 'pause' || d.event === 'ended') hide();
       // YouTube avisa errores (p. ej. inserción no permitida): se retira el reproductor
       if (d.event === 'onError' || (d.info && d.info.error)) { f.remove(); removeEventListener('message', onMsg); }
     };
@@ -551,6 +556,8 @@
       } else {
         send({ method: 'addEventListener', value: 'play' });
         send({ method: 'addEventListener', value: 'playProgress' });
+        send({ method: 'addEventListener', value: 'pause' });
+        send({ method: 'addEventListener', value: 'ended' });
       }
     }, { once: true });
     box.append(f);
