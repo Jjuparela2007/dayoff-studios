@@ -70,6 +70,22 @@ const staticOpts = {
 };
 app.use(express.static(path.join(ROOT, 'public'), staticOpts));
 
+/* SEO: robots.txt y sitemap.xml (el mapa del sitio se arma solo con los proyectos publicados) */
+app.get('/robots.txt', (req, res) => {
+  const base = `${req.protocol}://${req.get('host')}`;
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml\n`);
+});
+app.get('/sitemap.xml', async (req, res, next) => {
+  try {
+    const { query } = require('./db');
+    const base = `${req.protocol}://${req.get('host')}`;
+    const rows = await query('SELECT slug FROM projects WHERE published = 1 ORDER BY sort_order, id').catch(() => []);
+    const urls = ['/', ...rows.map((r) => `/project/${encodeURIComponent(r.slug)}`)];
+    res.type('application/xml').set('Cache-Control', 'public, max-age=3600')
+      .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${base}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  } catch (e) { next(e); }
+});
+
 /* Ficha de proyecto con URL propia: /project/my-film (también acepta la ruta antigua /proyecto/) → misma página, el JS abre la ficha */
 app.get(['/project/:slug', '/proyecto/:slug', '/director/:slug'], (req, res) => res.sendFile(path.join(ROOT, 'public', 'index.html')));
 
