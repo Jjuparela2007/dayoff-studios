@@ -39,6 +39,8 @@ if (PUBLIC_HOST) {
    imágenes/videos externos por HTTPS (CDN) y tráileres de YouTube/Vimeo. */
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
+  // Las imágenes deben poder verse desde otros sitios (vistas previas de WhatsApp/LinkedIn, opengraph.xyz, Google Imágenes)
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   // YouTube exige recibir el dominio de origen (Referer) en los videos incrustados; con "no-referrer"
   // (el valor por defecto de Helmet) muestra "Error 153". Esta política envía solo el dominio, no la URL completa.
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },

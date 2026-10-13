@@ -34,6 +34,11 @@ const readIndex = () => (PROD && indexCache) || (indexCache = fs.readFileSync(IN
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clip = (s, n = 160) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : s; };
 const baseUrl = (req) => (process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+// Imagen para compartir: si es una foto del sitio se sirve recortada a 1200×630 (lo que esperan WhatsApp, Facebook, LinkedIn y X)
+const shareImg = (req, u) => {
+  const m = String(u || '').match(/^\/(uploads|media)\/[^?#]+\.(?:jpe?g|png|webp|avif)$/i);
+  return m ? { url: abs(req, `/img/og${u}`), w: 1200, h: 630 } : (u ? { url: abs(req, u) } : null);
+};
 const abs = (req, u) => (!u ? '' : /^https?:\/\//i.test(u) ? u : `${baseUrl(req)}${u.startsWith('/') ? '' : '/'}${u}`);
 // JSON dentro de <script>: se escapa "<" para que ningún texto pueda cerrar la etiqueta
 const ld = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
@@ -67,14 +72,19 @@ function organization(req, s) {
 }
 
 /** Inserta título, descripción, imagen, canonical y JSON-LD en index.html */
-function render(req, res, { title, description, image, url, type = 'website', jsonld = [] }) {
+function render(req, res, { title, description, image, url, type = 'website', jsonld = [], site = 'DayOff Studios' }) {
+  const img = image ? shareImg(req, image.replace(baseUrl(req), '')) : null;
+  image = img && img.url;
   const tags = [
+    `<meta property="og:site_name" content="${esc(site)}">`,
     `<link rel="canonical" href="${esc(url)}">`,
     `<meta property="og:type" content="${esc(type)}">`,
     `<meta property="og:title" content="${esc(title)}">`,
     `<meta property="og:description" content="${esc(description)}">`,
     `<meta property="og:url" content="${esc(url)}">`,
     image ? `<meta property="og:image" content="${esc(image)}">` : '',
+    img && img.w ? `<meta property="og:image:width" content="${img.w}">\n  <meta property="og:image:height" content="${img.h}">` : '',
+    image ? `<meta property="og:image:alt" content="${esc(title)}">` : '',
     `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">`,
     `<meta name="twitter:title" content="${esc(title)}">`,
     `<meta name="twitter:description" content="${esc(description)}">`,
@@ -93,7 +103,7 @@ async function home(req, res, next) {
     const s = await settings();
     const site = s.site_name || 'DayOff Studios';
     const [p] = await query('SELECT backdrop_url, poster_url FROM projects WHERE published = 1 ORDER BY featured DESC, sort_order LIMIT 1').catch(() => []);
-    render(req, res, {
+    render(req, res, { site,
       title: `${site} — ${s.slogan || 'Film Production Company'}`,
       description: clip(s.seo_description || s.about_text || `${site}: film production company — feature films, short films, series, commercials and documentaries.`),
       image: abs(req, s.seo_image_url || s.hero_image_url || p?.backdrop_url || p?.poster_url),
@@ -126,7 +136,7 @@ async function project(req, res, next) {
       director: p.director ? p.director.split(/\s*(?:,|&| y | and )\s*/).filter(Boolean).map((name) => ({ '@type': 'Person', name })) : undefined,
       productionCompany: { '@type': 'Organization', name: site, '@id': `${baseUrl(req)}/#organization` }
     };
-    render(req, res, {
+    render(req, res, { site,
       title: `${p.title}${p.year ? ` (${p.year})` : ''}${kind ? ` — ${kind}` : ''} | ${site}`,
       description: clip(p.synopsis || p.tagline || `${p.title}, a production by ${site}.`),
       image: share, url, type: 'video.movie',
@@ -141,7 +151,7 @@ async function director(req, res, next) {
     const site = s.site_name || 'DayOff Studios';
     const name = s.founder_name || 'Founder';
     const url = `${baseUrl(req)}/director/${encodeURIComponent(slugify(name))}`;
-    render(req, res, {
+    render(req, res, { site,
       title: `${name} — ${s.founder_role || 'Director'} | ${site}`,
       description: clip(s.founder_bio || s.founder_teaser || `${name}, ${s.founder_role || 'director'} at ${site}.`),
       image: abs(req, s.founder_photo_url), url, type: 'profile',
