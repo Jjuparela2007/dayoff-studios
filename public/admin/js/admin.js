@@ -256,7 +256,8 @@
     ['Fundador / creador (aparece en "The studio" y tiene su propia página)', [
       ['founder_name', 'Nombre (su filmografía se arma sola con los proyectos donde figure como director o en los créditos con este mismo nombre)'], ['founder_role', 'Cargo (ej. Founder & Creative Director)'],
       ['founder_disciplines', 'Oficios, separados por comas (ej. Director, Screenwriter, Producer)'],
-      ['founder_photo_url', 'Foto (vertical, idealmente en blanco y negro)', 'url'],
+      ['founder_photo_url', 'Foto principal (portada de su página y sección del estudio; vertical, idealmente en blanco y negro)', 'url'],
+      ['founder_photo2_url', 'Segunda foto (junto a la biografía en su página; si la dejas vacía se repite la principal)', 'url'],
       ['founder_quote', 'Frase / cita destacada'],
       ['founder_teaser', 'Texto corto para la sección del estudio', 'textarea'],
       ['founder_bio', 'Biografía completa para su página (deja una línea en blanco entre párrafos)', 'textarea'],
@@ -384,6 +385,168 @@
       await run(b, () => api(`/api/admin/categories/${b.dataset.del}`, { method: 'DELETE' }), 'Categoría eliminada');
       location.hash = 'categorias'; route();
     }));
+  };
+
+  /* ═════════════ VISTA: News (prensa, premios, festivales, videos) ═════════════ */
+  const NEWS_KINDS = [
+    ['press', 'Prensa / artículo', 'Una nota o artículo donde mencionan a DayOff (pon el enlace a la nota)'],
+    ['award', 'Premio', 'Un premio ganado — se muestra con laurel, como en los pósters de cine'],
+    ['festival', 'Selección oficial / festival', 'Selección o nominación en un festival — también con laurel'],
+    ['video', 'Video / entrevista', 'Reportaje, entrevista o noticia en video (YouTube, Vimeo o archivo): se reproduce en el sitio']
+  ];
+  const kindName = (k) => (NEWS_KINDS.find((x) => x[0] === k) || NEWS_KINDS[0])[1];
+
+  views.news = async (id) => {
+    const [list, projects] = await Promise.all([api('/api/admin/news'), api('/api/admin/projects')]);
+    const editing = id === 'nueva' ? { kind: 'press', published: 1 } : list.find((n) => String(n.id) === id);
+
+    view.innerHTML = `
+      <div class="page-head"><div><h1>News</h1><p>Prensa, premios, festivales y videos donde aparece la marca. La sección "News" del sitio solo se muestra cuando hay al menos una publicada.</p></div>
+        <a class="btn btn--primary" href="#news/nueva">+ Nueva noticia</a></div>
+      ${editing ? `
+        <form class="panel" id="news-form">
+          <h2>${editing.id ? 'Editar' : 'Nueva'} noticia</h2>
+          <div class="form-grid">
+            <label>Tipo<select name="kind" id="news-kind">${NEWS_KINDS.map(([v, l]) => `<option value="${v}" ${editing.kind === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+              <span class="hint" id="news-kind-hint"></span></label>
+            <label>Fecha<input type="date" name="published_at" value="${esc(editing.published_at || '')}"></label>
+            <label class="span-all">Título — titular de la nota, nombre del premio (ej. "Best Short Film") o del video<input name="title" required value="${esc(editing.title)}"></label>
+            <label>Medio / festival / quien lo otorga (ej. "Variety", "Bogoshorts")<input name="outlet" value="${esc(editing.outlet)}"></label>
+            <label>Proyecto relacionado (opcional)<select name="project_id"><option value="">— Ninguno —</option>
+              ${projects.map((p) => `<option value="${p.id}" ${String(editing.project_id) === String(p.id) ? 'selected' : ''}>${esc(p.title)}</option>`).join('')}</select></label>
+            <label class="span-all">Resumen / cita corta (opcional)<textarea name="excerpt" rows="3">${esc(editing.excerpt)}</textarea></label>
+            <label class="span-all">Enlace a la nota o al premio (opcional)<input name="url" type="url" placeholder="https://…" value="${esc(editing.url)}"></label>
+            <label class="span-all">Video (YouTube, Vimeo o archivo .mp4) — para entrevistas o reportajes<input name="video_url" placeholder="https://www.youtube.com/watch?v=…" value="${esc(editing.video_url)}"></label>
+            ${urlField('image_url', 'Imagen (foto de la nota, del premio o del evento; para videos de YouTube se usa la miniatura si la dejas vacía)', editing.image_url)}
+            <label>Orden (si hay varias con la misma fecha)<input name="sort_order" type="number" value="${esc(editing.sort_order ?? 0)}"></label>
+            <label class="check"><input type="checkbox" name="published" ${+editing.published ? 'checked' : ''}> Publicada (visible en el sitio)</label>
+            <label class="check"><input type="checkbox" name="featured" ${+editing.featured ? 'checked' : ''}> Destacada (aparece primero y en grande)</label>
+          </div>
+          <div class="savebar"><a class="btn btn--ghost" href="#news">Cancelar</a><button class="btn btn--primary">Guardar</button></div>
+        </form>` : ''}
+      <div class="panel table-wrap"><table class="table">
+        <thead><tr><th></th><th>Título</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${list.map((n) => `<tr>
+          <td>${thumb(n.image_url, 'thumb thumb--wide')}</td>
+          <td><b>${esc(n.title)}</b><div class="hint">${esc(n.outlet || '')}${n.project_title ? ` · ${esc(n.project_title)}` : ''}</div></td>
+          <td>${esc(kindName(n.kind))}</td><td>${esc(n.published_at || '—')}</td>
+          <td>${+n.published ? '<span class="tag tag--ok">Publicada</span>' : '<span class="tag">Borrador</span>'}
+              ${+n.featured ? '<span class="tag tag--accent">Destacada</span>' : ''}</td>
+          <td><div class="actions"><a class="btn btn--ghost btn--sm" href="#news/${n.id}">Editar</a>
+            <button class="btn btn--danger btn--sm" data-del-news="${n.id}">Eliminar</button></div></td></tr>`).join('')
+          || '<tr><td colspan="6" class="empty">Aún no hay noticias. Agrega la primera con "+ Nueva noticia".</td></tr>'}</tbody></table></div>`;
+
+    const form = $('#news-form');
+    if (form) {
+      const kindSel = $('#news-kind'), hint = $('#news-kind-hint');
+      const showHint = () => { hint.textContent = (NEWS_KINDS.find((k) => k[0] === kindSel.value) || [])[2] || ''; };
+      kindSel.addEventListener('change', showHint); showHint();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ok = await run($('.btn--primary', form), () => editing.id
+          ? api(`/api/admin/news/${editing.id}`, { method: 'PUT', body: formData(form) })
+          : api('/api/admin/news', { method: 'POST', body: formData(form) }), 'Noticia guardada');
+        if (ok) location.hash = 'news';
+      });
+    }
+    $$('[data-del-news]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta noticia?')) return;
+      await run(b, () => api(`/api/admin/news/${b.dataset.delNews}`, { method: 'DELETE' }), 'Noticia eliminada');
+      location.hash = 'news'; route();
+    }));
+  };
+
+  /* ═════════════ VISTA: Galería del estudio ("On set" en el sitio): videos ═════════════ */
+  const ytIdOf = (u) => (String(u || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/) || [])[1];
+  const isEmbedUrl = (u) => /(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u || '');
+  /** Miniatura de la fila: el video propio, la portada, o la miniatura de YouTube. */
+  const clipPreview = (url, poster) => {
+    if (poster) return `<img class="preview" src="${esc(poster)}" alt="">`;
+    if (isVideo(url)) return `<video class="preview" src="${esc(url)}#t=0.5" muted preload="metadata"></video>`;
+    const yt = ytIdOf(url);
+    if (yt) return `<img class="preview" src="https://i.ytimg.com/vi/${yt}/mqdefault.jpg" alt="">`;
+    if (isEmbedUrl(url)) return '<span class="preview preview--label">Vimeo</span>';
+    return url ? `<img class="preview" src="${esc(url)}" alt="">` : '<span class="preview"></span>';
+  };
+
+  views.galeria = async () => {
+    const list = await api('/api/admin/studio-photos');
+    view.innerHTML = `
+      <div class="page-head"><div><h1>Galería del estudio</h1>
+        <p>Videos de rodaje y detrás de cámaras. Aparecen en el sitio en la sección "On set" (entre "Now Showing" y "Work"):
+           los archivos se reproducen solos y sin sonido mientras se ven, y al hacer clic se abren en grande con sonido.
+           Si no hay ninguno publicado, la sección no se muestra.</p></div></div>
+      <div class="panel">
+        <div class="panel__head"><h2>Videos <small class="hint" id="clip-count"></small></h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="btn btn--primary btn--sm">Subir videos<input type="file" id="clips-upload" multiple hidden accept="video/mp4,video/webm,video/quicktime"></label>
+            <button class="btn btn--ghost btn--sm" id="clips-link">+ Link de YouTube / Vimeo</button>
+            <button class="btn btn--ghost btn--sm" id="clips-add">+ Desde biblioteca</button></div></div>
+        <p class="hint">
+          <b>Clips cortos (10 a 60 s):</b> súbelos como archivo MP4 (H.264), máximo 200 MB; mejor si pesan menos de 30 MB (en HandBrake: preset "Fast 1080p30").<br>
+          <b>Videos largos (making of, entrevistas):</b> súbelos a YouTube o Vimeo y pega el link aquí: cargan más rápido y no ocupan espacio.<br>
+          <b>Portada</b> (opcional): imagen que se ve mientras carga el video; recomendada para links de Vimeo. Arrastra ⋮⋮ para ordenar: los primeros salen arriba.</p>
+        <div class="progress" id="clips-progress" hidden><span></span></div>
+        <div class="rows" id="clip-rows" style="margin-top:14px"></div>
+      </div>
+      <div class="savebar"><button class="btn btn--primary" id="clips-save">Guardar galería</button></div>`;
+
+    const rows = $('#clip-rows');
+    const clipRow = (m = {}) => `<div class="row row--clip" draggable="true">
+      <span class="handle" title="Arrastrar">⋮⋮</span>
+      <span class="clip-prev">${clipPreview(m.url, m.poster_url)}</span>
+      <div class="clip-fields">
+        <div class="clip-url"><input data-k="url" placeholder="Archivo de video o link de YouTube / Vimeo" value="${esc(m.url)}">
+          <button type="button" class="btn btn--ghost btn--sm" data-pick-row="url">Biblioteca</button></div>
+        <div class="clip-url"><input data-k="poster_url" placeholder="Portada (opcional)" value="${esc(m.poster_url)}">
+          <button type="button" class="btn btn--ghost btn--sm" data-pick-row="poster_url">Biblioteca</button></div>
+        <input data-k="caption" placeholder="Pie de video en inglés (opcional, ej. Behind the scenes — TITO, 2024)" value="${esc(m.caption)}">
+      </div>
+      <label class="check"><input type="checkbox" data-k="published" ${m.published === undefined || +m.published ? 'checked' : ''}> Publicado</label>
+      <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
+    </div>`;
+    const count = () => {
+      const n = $$('.row', rows).length;
+      $('#clip-count').textContent = n ? `· ${n}` : '';
+      if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay videos. Pulsa "Subir videos" o "+ Link de YouTube / Vimeo".</p>';
+    };
+    const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', clipRow(m)); count(); return rows.lastElementChild; };
+    const refreshPrev = (row) => { $('.clip-prev', row).innerHTML = clipPreview($('[data-k=url]', row).value.trim(), $('[data-k=poster_url]', row).value.trim()); };
+    const collect = () => $$('.row', rows).map((r) => ({
+      url: $('[data-k=url]', r).value.trim(), poster_url: $('[data-k=poster_url]', r).value.trim(),
+      caption: $('[data-k=caption]', r).value.trim(), published: $('[data-k=published]', r).checked ? 1 : 0
+    })).filter((m) => m.url);
+    const save = (btn, msg = 'Galería guardada') => run(btn, () => api('/api/admin/studio-photos', { method: 'PUT', body: collect() }), msg);
+
+    list.forEach(append); count();
+
+    $('#clips-add').addEventListener('click', async () => { const url = await pickMedia(); if (url) append({ url }); });
+    $('#clips-link').addEventListener('click', () => { const r = append({}); $('[data-k=url]', r).focus(); });
+    // Al subir, los videos se añaden y la galería se guarda sola
+    $('#clips-upload').addEventListener('change', async (e) => {
+      const big = [...e.target.files].find((f) => f.size > 200 * 1024 * 1024);
+      if (big) { toast(`"${big.name}" pesa ${Math.round(big.size / 1048576)} MB (máximo 200 MB). Comprímelo o súbelo a YouTube/Vimeo y pega el link.`, true); e.target.value = ''; return; }
+      const bar = $('#clips-progress'); bar.hidden = false;
+      const saved = await run(null, () => uploadFiles(e.target.files, (f) => { bar.firstElementChild.style.width = f * 100 + '%'; }), null);
+      bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
+      if (!saved || !saved.length) return;
+      saved.forEach((f) => append({ url: f.url }));
+      save(null, `${saved.length} video${saved.length > 1 ? 's' : ''} subido${saved.length > 1 ? 's' : ''} y guardado${saved.length > 1 ? 's' : ''}`);
+    });
+    rows.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); return; }
+      const pick = e.target.closest('[data-pick-row]');
+      if (pick) {
+        const url = await pickMedia();
+        if (!url) return;
+        const row = pick.closest('.row');
+        $(`[data-k=${pick.dataset.pickRow}]`, row).value = url;
+        refreshPrev(row);
+      }
+    });
+    rows.addEventListener('change', (e) => { if (/^(url|poster_url)$/.test(e.target.dataset.k || '')) refreshPrev(e.target.closest('.row')); });
+    enableDragSort(rows);
+    $('#clips-save').addEventListener('click', (e) => save(e.target));
   };
 
   /* ═════════════ VISTA: Proyectos ═════════════ */
@@ -522,7 +685,24 @@
         }
       }
       if (r && isNew) location.hash = `proyectos/${r.id}`;
+      // Refresca el encabezado, el slug y el enlace "Ver en el sitio" con lo recién guardado
+      if (r && !isNew) {
+        p.title = body.title; p.slug = r.slug || p.slug;
+        $('.page-head h1').textContent = p.title;
+        $('#project-form [name=slug]').value = p.slug;
+        const ver = $('.page-head a[target=_blank]');
+        if (ver) ver.href = `/project/${p.slug}`;
+        // El director se copia solo al crédito de dirección: la pestaña Créditos se refresca con lo guardado
+        if (r.credits) setCredits(r.credits);
+      }
     });
+
+    // Slug automático: mientras no lo hayas escrito a mano, sigue al título (Avatar: Fire and Ash → avatar-fire-and-ash)
+    const toSlug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const titleIn = $('#project-form [name=title]'), slugIn = $('#project-form [name=slug]');
+    let slugAuto = !slugIn.value || slugIn.value === toSlug(titleIn.value) || slugIn.value.replace(/-\d+$/, '') === toSlug(titleIn.value);
+    titleIn.addEventListener('input', () => { if (slugAuto) slugIn.value = toSlug(titleIn.value); });
+    slugIn.addEventListener('input', () => { slugAuto = !slugIn.value; });
     if (isNew) return;
 
     /* ── Créditos ── */
@@ -539,7 +719,13 @@
       </div>`;
     };
     const creditRows = $('#credit-rows');
-    creditRows.innerHTML = p.credits.map(creditRow).join('');
+    function setCredits(list) {
+      p.credits = list;
+      creditRows.innerHTML = list.map(creditRow).join('');
+      const tab = $('.tabs [data-tab=credits]');
+      if (tab) tab.textContent = `Créditos (${list.length})`;
+    }
+    setCredits(p.credits);
     $('#add-credit').addEventListener('click', () => creditRows.insertAdjacentHTML('beforeend', creditRow({ department: 'reparto' })));
     $('#save-credits').addEventListener('click', (e) => {
       const list = $$('.row', creditRows).map((r) => {
@@ -547,7 +733,12 @@
         const person = people.find((x) => x.name.toLowerCase() === name.toLowerCase());
         return { department: $('[data-k=department]', r).value, role: $('[data-k=role]', r).value.trim(), name, person_id: person ? person.id : null };
       }).filter((c) => c.name || c.role);
-      run(e.target, () => api(`/api/admin/projects/${p.id}/credits`, { method: 'PUT', body: list }), 'Créditos guardados');
+      run(e.target, () => api(`/api/admin/projects/${p.id}/credits`, { method: 'PUT', body: list }), 'Créditos guardados').then((r) => {
+        if (!r) return;
+        if (r.credits) setCredits(r.credits);
+        // …y al revés: el crédito de dirección actualiza el campo Director/a de la ficha
+        if (r.director) { p.director = r.director; const d = $('#project-form [name=director]'); if (d) d.value = r.director; }
+      });
     });
 
     /* ── Galería ── */
