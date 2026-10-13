@@ -646,9 +646,7 @@
             <span class="cat-band__more mono">${String(c.items.length).padStart(2, '0')} ${c.items.length === 1 ? 'project' : 'projects'} <i>→</i></span>
           </span>
         </a>
-        <div class="meter" aria-hidden="true">${METER_HTML}</div>
       </div>`).join('');
-    $$('.meter', wrap).forEach(fillMeter);
     if (REDUCED || navigator.connection?.saveData) $$('.cat-band video', wrap).forEach((v) => { v.removeAttribute('autoplay'); v.pause(); });
 
     if (!wrap.dataset.bound) {
@@ -662,28 +660,38 @@
     }
   }
 
-  /** Animaciones de las franjas (se llaman desde scrollAnimations). */
+  /** Animaciones de las franjas (se llaman desde scrollAnimations).
+   *  Transición con zoom entre categorías: la franja que entra viene muy acercada y se abre hasta su tamaño
+   *  mientras sube; la que se queda fija debajo se aleja (zoom out), se redondea y se oscurece hasta quedar tapada. */
   function catsAnimations() {
     const blocks = $$('#work .cat-block');
     if (!blocks.length) return;
     blocks.forEach((b) => {
-      const media = $('.cat-band__media', b);
-      // Parallax + zoom: la imagen se mueve más lento que la página y se acerca un poco al pasar
-      gsap.fromTo(media, { yPercent: -14, scale: 1.22 }, { yPercent: 14, scale: 1.04, ease: 'none',
-        scrollTrigger: { trigger: b, start: 'top bottom', end: 'bottom top', scrub: true } });
-      gsap.fromTo($('.cat-band__body', b), { yPercent: 45 }, { yPercent: -45, ease: 'none',
-        scrollTrigger: { trigger: b, start: 'top bottom', end: 'bottom top', scrub: true } });
-      gsap.from($('.cat-band__title', b), { opacity: 0, letterSpacing: '.18em', duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: b, start: 'top 75%' } });
-      slideMeter($('.meter', b), b);
+      const media = $('.cat-band__media', b), body = $('.cat-band__body', b);
+      // Entrada: la imagen llega con zoom (1.45 → 1.05) y un poco de parallax mientras la franja sube hasta arriba
+      gsap.fromTo(media, { scale: 1.45, yPercent: -8 }, { scale: 1.05, yPercent: 6, ease: 'none',
+        scrollTrigger: { trigger: b, start: 'top bottom', end: 'top top', scrub: true } });
+      // El título también se acerca desde grande y transparente
+      gsap.fromTo(body, { scale: 1.35, opacity: 0, yPercent: 40 }, { scale: 1, opacity: 1, yPercent: 0, ease: 'power1.out',
+        scrollTrigger: { trigger: b, start: 'top bottom', end: 'top 25%', scrub: true } });
     });
-    // Escritorio: cada franja se queda quieta mientras la siguiente sube encima y la va oscureciendo
+    // Escritorio: cada franja se queda quieta y la siguiente sube encima; mientras tanto la de abajo se aleja
     ST.matchMedia({
       '(min-width: 861px)': () => {
-        blocks.slice(0, -1).forEach((b, i) => {
-                    // Se fija al llegar arriba y la siguiente (que ya asoma por debajo) sube hasta taparla
+        blocks.slice(0, -1).forEach((b) => {
+          const band = $('.cat-band', b);
+          const st = { trigger: b, start: 'top top', end: () => '+=' + b.offsetHeight, scrub: true, invalidateOnRefresh: true };
           ST.create({ trigger: b, start: 'top top', end: () => '+=' + b.offsetHeight, pin: true, pinSpacing: false, invalidateOnRefresh: true });
-          gsap.fromTo($('.cat-band__shade', b), { opacity: 0 }, { opacity: .78, ease: 'none',
-            scrollTrigger: { trigger: b, start: 'top top', end: () => '+=' + b.offsetHeight, scrub: true, invalidateOnRefresh: true } });
+          gsap.fromTo(band, { scale: 1, borderRadius: 0 }, { scale: .82, borderRadius: 18, ease: 'power1.in', scrollTrigger: st });
+          gsap.fromTo($('.cat-band__media', b), { scale: 1.05 }, { scale: 1.25, ease: 'none', immediateRender: false, scrollTrigger: st });
+          gsap.fromTo($('.cat-band__shade', b), { opacity: 0 }, { opacity: .8, ease: 'none', scrollTrigger: st });
+        });
+      },
+      // Celular: sin fijar; la franja se aleja un poco al salir por arriba
+      '(max-width: 860px)': () => {
+        blocks.forEach((b) => {
+          gsap.fromTo($('.cat-band', b), { scale: 1 }, { scale: .9, ease: 'none',
+            scrollTrigger: { trigger: b, start: 'bottom 60%', end: 'bottom top', scrub: true } });
         });
       }
     });

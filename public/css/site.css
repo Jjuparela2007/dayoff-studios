@@ -320,7 +320,7 @@ section { position: relative; }
 .works { padding: 0; background: #000; color: #fff; }
 .works[hidden] { display: none; }
 .cat-block { position: relative; background: #000; }
-.cat-band { position: relative; display: grid; place-items: center; height: clamp(380px, 78vh, 900px); overflow: hidden; color: #fff; text-decoration: none; isolation: isolate; }
+.cat-band { position: relative; display: grid; place-items: center; height: clamp(380px, 82vh, 920px); overflow: hidden; transform-origin: 50% 40%; will-change: transform; color: #fff; text-decoration: none; isolation: isolate; }
 .cat-band__media { position: absolute; inset: -14% 0; z-index: -2; will-change: transform; }
 .cat-band__media img, .cat-band__media video { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 1s var(--ease-out); }
 .cat-band::before {   /* líneas de video muy suaves, como en un monitor */
@@ -340,11 +340,9 @@ section { position: relative; }
 .cat-band:hover .cat-band__more, .cat-band:focus-visible .cat-band__more { opacity: 1; transform: none; }
 .cat-band:hover .cat-band__more i { transform: translateX(6px); }
 .cat-band:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
-.cat-block .meter { --wall: min(1225px, 66vw); padding: clamp(18px, 2vw, 28px) 0 clamp(16px, 1.8vw, 24px); }
 @media (hover: none) { .cat-band__more { opacity: .85; transform: none; } }
 @media (max-width: 860px) {
   .cat-band { height: clamp(300px, 62vh, 560px); }
-  .cat-block .meter { --wall: calc(100% - 2 * var(--gutter)); }
 }
 
 /* Proyectos de una categoría (capa a pantalla completa) */
