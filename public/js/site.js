@@ -581,6 +581,139 @@
   const brandMark = () => (state.settings?.logo_url
     ? `<img src="${esc(safeUrl(state.settings.logo_url))}" alt="">` : (window.DAYOFF_LOGO_SVG || ''));
 
+  /* ───────────────────────── "Rollo" de cámara (escala de exposición tipo visor) ─────────────────────────
+     Se usa en "Featured Work" y debajo de cada franja de categoría en "Work".
+     Los textos de los lados se editan en el panel → Textos del sitio (vacío = se oculta). */
+  const METER_HTML = `<span class="meter__side meter__side--l"><span class="meter__txt"></span>&nbsp; |</span>
+    <div class="meter__scale"><i class="meter__mark"></i><div class="meter__track"></div><div class="meter__ticks"></div></div>
+    <span class="meter__side meter__side--r">|&nbsp; <span class="meter__txt"></span></span>`;
+  function fillMeter(el) {
+    if (!el) return;
+    const st = state.settings || {};
+    [['meter_left', '1\\400  ISO 400', '.meter__side--l'], ['meter_right', 'AWB  FPS 24  f1.8', '.meter__side--r']].forEach(([k, def, sel]) => {
+      const v = String(st[k] ?? def).trim(), side = $(sel, el);
+      $('.meter__txt', side).textContent = v;
+      side.style.visibility = v ? '' : 'hidden';
+    });
+    // Escala 16…1 … 1…16, repetida 3 veces para que nunca se acabe al deslizarse
+    const track = $('.meter__track', el);
+    if (!track.childElementCount) {
+      const nums = [...Array(16)].map((_, k) => 16 - k).concat(['', ...Array.from({ length: 16 }, (_, k) => k + 1)]);
+      const run = nums.map((n) => (n === '' ? '<b>…</b>' : `<span>${n}</span><b>…</b>`)).join('');
+      track.innerHTML = `<div>${run}</div><div>${run}</div><div>${run}</div>`;
+      $('.meter__ticks', el).innerHTML = '<span></span>'.repeat(17);
+    }
+  }
+  /** La escala se desliza con el scroll; a mitad del recorrido la marca queda entre el "1" y el "1". */
+  function slideMeter(el, trigger) {
+    const track = $('.meter__track', el), scale = $('.meter__scale', el);
+    if (!track || !track.firstElementChild) return;
+    const copyW = () => track.firstElementChild.offsetWidth;
+    const centerX = () => scale.offsetWidth / 2 - copyW() * 1.5;
+    gsap.fromTo(track, { x: () => centerX() + copyW() * .22 }, { x: () => centerX() - copyW() * .22, ease: 'none',
+      scrollTrigger: { trigger, start: 'top bottom', end: 'bottom top', scrub: true, invalidateOnRefresh: true } });
+  }
+
+  /* ───────────────────────── Work: franjas de categorías ─────────────────────────
+     Una franja de ancho completo por categoría (las que tienen proyectos): imagen o video de fondo
+     (Categorías → "Imagen o video de la franja"; si está vacío, la imagen panorámica de su primer proyecto),
+     título grande y el rollo de cámara debajo. Al hacer scroll la imagen se mueve más lento (parallax),
+     hace un ligero zoom, y en escritorio cada franja se queda quieta mientras la siguiente sube encima.
+     Clic → se abren los proyectos de esa categoría. */
+  function renderCats() {
+    const sec = $('#work'), wrap = $('.cats', sec);
+    const cats = state.categories.map((c) => ({ ...c, items: state.projects.filter((p) => p.category_id === c.id) })).filter((c) => c.items.length);
+    sec.hidden = !cats.length;
+    $$('.nav a[href="#work"]').forEach((a) => { a.hidden = !cats.length; });
+    if (!cats.length) return;
+    const bg = (c) => {
+      const cover = safeUrl(c.cover_url);
+      const p = c.items.find((x) => safeUrl(x.backdrop_url)) || c.items[0];
+      const img = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
+      if (cover && isVideoFile(cover)) {
+        return `<video muted loop playsinline autoplay preload="metadata" src="${esc(responsiveVideo(cover, { max1080: true }))}"${img ? ` poster="${esc(img)}"` : ''} aria-hidden="true"></video>`;
+      }
+      const src = cover || img;
+      return src ? `<img src="${esc(src)}" alt="" loading="lazy" draggable="false">` : '';
+    };
+    wrap.innerHTML = cats.map((c, i) => `
+      <div class="cat-block" style="z-index:${i + 1}">
+        <a class="cat-band" href="#work" data-cat="${esc(c.slug)}" aria-label="${esc(c.name)} — ${c.items.length} projects">
+          <span class="cat-band__media" aria-hidden="true">${bg(c)}</span>
+          <span class="cat-band__shade" aria-hidden="true"></span>
+          <span class="cat-band__body">
+            <span class="cat-band__title">${esc(c.name)}</span>
+            <span class="cat-band__more mono">${String(c.items.length).padStart(2, '0')} ${c.items.length === 1 ? 'project' : 'projects'} <i>→</i></span>
+          </span>
+        </a>
+        <div class="meter" aria-hidden="true">${METER_HTML}</div>
+      </div>`).join('');
+    $$('.meter', wrap).forEach(fillMeter);
+    if (REDUCED || navigator.connection?.saveData) $$('.cat-band video', wrap).forEach((v) => { v.removeAttribute('autoplay'); v.pause(); });
+
+    if (!wrap.dataset.bound) {
+      wrap.dataset.bound = '1';
+      wrap.addEventListener('click', (e) => {
+        const a = e.target.closest('.cat-band');
+        if (!a) return;
+        e.preventDefault();
+        openCategory(a.dataset.cat);
+      });
+    }
+  }
+
+  /** Animaciones de las franjas (se llaman desde scrollAnimations). */
+  function catsAnimations() {
+    const blocks = $$('#work .cat-block');
+    if (!blocks.length) return;
+    blocks.forEach((b) => {
+      const media = $('.cat-band__media', b);
+      // Parallax + zoom: la imagen se mueve más lento que la página y se acerca un poco al pasar
+      gsap.fromTo(media, { yPercent: -14, scale: 1.22 }, { yPercent: 14, scale: 1.04, ease: 'none',
+        scrollTrigger: { trigger: b, start: 'top bottom', end: 'bottom top', scrub: true } });
+      gsap.fromTo($('.cat-band__body', b), { yPercent: 45 }, { yPercent: -45, ease: 'none',
+        scrollTrigger: { trigger: b, start: 'top bottom', end: 'bottom top', scrub: true } });
+      gsap.from($('.cat-band__title', b), { opacity: 0, letterSpacing: '.18em', duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: b, start: 'top 75%' } });
+      slideMeter($('.meter', b), b);
+    });
+    // Escritorio: cada franja se queda quieta mientras la siguiente sube encima y la va oscureciendo
+    ST.matchMedia({
+      '(min-width: 861px)': () => {
+        blocks.slice(0, -1).forEach((b, i) => {
+                    // Se fija al llegar arriba y la siguiente (que ya asoma por debajo) sube hasta taparla
+          ST.create({ trigger: b, start: 'top top', end: () => '+=' + b.offsetHeight, pin: true, pinSpacing: false, invalidateOnRefresh: true });
+          gsap.fromTo($('.cat-band__shade', b), { opacity: 0 }, { opacity: .78, ease: 'none',
+            scrollTrigger: { trigger: b, start: 'top top', end: () => '+=' + b.offsetHeight, scrub: true, invalidateOnRefresh: true } });
+        });
+      }
+    });
+  }
+
+  /* Proyectos de una categoría: capa a pantalla completa con las tarjetas (y filtros para cambiar de categoría) */
+  const catview = $('.catview');
+  if (catview) document.body.append(catview);   // fuera de <main>, para que ninguna transformación la afecte
+  function openCategory(slug) {
+    const cat = state.categories.find((c) => c.slug === slug);
+    if (!cat) return;
+    $('.catview__title', catview).textContent = cat.name;
+    catview.hidden = false;
+    state.catOpen = true;
+    document.body.classList.add('is-locked');
+    $('.catview__scroll', catview).scrollTop = 0;
+    setFilter(slug);
+    if (ANIM) gsap.fromTo(catview, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: .8, ease: 'power4.inOut', clearProps: 'clipPath' });
+    $('.catview__close', catview).focus({ preventScroll: true });
+  }
+  function closeCategory() {
+    if (!state.catOpen) return;
+    const done = () => { catview.hidden = true; $$('.grid video', catview).forEach((v) => v.pause()); };
+    state.catOpen = false;
+    if (!state.detailOpen) document.body.classList.remove('is-locked');
+    if (ANIM) gsap.to(catview, { clipPath: 'inset(0 0 100% 0)', duration: .6, ease: 'power3.inOut', onComplete: () => { done(); gsap.set(catview, { clearProps: 'clipPath' }); } });
+    else done();
+  }
+  catview && $('.catview__close', catview).addEventListener('click', closeCategory);
+
   function renderOnset() {
     const sec = $('#onset');
     if (!sec) return;
@@ -594,11 +727,7 @@
     $('.onset__title', sec).textContent = title;
     $('.onset__band', sec).hidden = !title;
     $$('.nav__onset').forEach((a) => { a.hidden = !items.length; a.textContent = txt('onset_nav', title || 'Featured Work'); });
-    [['meter_left', '1\\400  ISO 400', '.meter__side--l'], ['meter_right', 'AWB  FPS 24  f1.8', '.meter__side--r']].forEach(([k, def, sel]) => {
-      const v = txt(k, def), side = $(sel, sec);
-      $('.meter__txt', side).textContent = v;
-      side.style.visibility = v ? '' : 'hidden';
-    });
+    fillMeter($('.meter', sec));
     if (!items.length) return;
 
     const media = (m) => {
@@ -629,15 +758,6 @@
       i += row.n; r++;
     }
     $('.onset__wall', sec).innerHTML = html;
-
-    // Escala del "rollo": 16…1 … 1…16, repetida para que nunca se acabe al deslizarse
-    const track = $('.meter__track', sec);
-    if (!track.childElementCount) {
-      const nums = [...Array(16)].map((_, k) => 16 - k).concat(['', ...Array.from({ length: 16 }, (_, k) => k + 1)]);
-      const run = nums.map((n) => (n === '' ? '<b>…</b>' : `<span>${n}</span><b>…</b>`)).join('');
-      track.innerHTML = `<div>${run}</div><div>${run}</div><div>${run}</div>`;
-      $('.meter__ticks', sec).innerHTML = '<span></span>'.repeat(17);
-    }
 
     const more = $('.onset__more', sec);
     more.hidden = onsetAll || items.length <= ONSET_LIMIT;
@@ -670,12 +790,7 @@
   function onsetAnimations() {
     const sec = $('#onset');
     if (!ANIM || !ST || !sec || sec.hidden) return;
-    // La escala pasa por la marca central: a mitad del recorrido, la marca queda entre el "1" y el "1"
-    const track = $('.meter__track', sec), scale = $('.meter__scale', sec);
-    const copyW = () => track.firstElementChild.offsetWidth;
-    const centerX = () => scale.offsetWidth / 2 - copyW() * 1.5;
-    gsap.fromTo(track, { x: () => centerX() + copyW() * .22 }, { x: () => centerX() - copyW() * .22, ease: 'none',
-      scrollTrigger: { trigger: '#onset', start: 'top bottom', end: 'bottom top', scrub: true, invalidateOnRefresh: true } });
+    slideMeter($('.meter', sec), '#onset');
     gsap.from('.onset__title', { yPercent: 100, opacity: 0, duration: 1, ease: 'power4.out', scrollTrigger: { trigger: '.onset__band', start: 'top 85%' } });
     gsap.from('.onset__chev', { y: -10, opacity: 0, duration: .8, delay: .3, scrollTrigger: { trigger: '.onset__band', start: 'top 85%' } });
     gsap.from('.meter', { opacity: 0, duration: 1.2, scrollTrigger: { trigger: '.meter', start: 'top 90%' } });
@@ -739,6 +854,7 @@
 
   function setFilter(slug) {
     state.filter = slug;
+    if (catview) $('.catview__title', catview).textContent = slug === 'all' ? 'All work' : (state.categories.find((c) => c.slug === slug)?.name || '');
     $$('.filters button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.filter === slug)));
     moveInk();
     const grid = $('.grid');
@@ -910,6 +1026,8 @@
     // Lista de categorías: líneas que se dibujan + entrada escalonada
     // On set (galería del estudio)
     onsetAnimations();
+    // Work: franjas de categorías
+    catsAnimations();
 
     // ESTUDIO — la foto a través de las letras.
     // Escritorio: la escena se fija; al bajar, la foto sube dentro de las letras, las letras crecen hasta
@@ -1343,7 +1461,7 @@
     if (galleryIO) { galleryIO.disconnect(); galleryIO = null; }
     clearInterval(founderSwap); founderSwap = null;
     detailScroll.innerHTML = '';
-    document.body.classList.remove('is-locked');
+    if (!state.catOpen) document.body.classList.remove('is-locked');
     state.detailOpen = false;
     document.title = `${state.settings.site_name || 'DayOff Studios'} — ${state.settings.slogan || ''}`;
     if (push) history.pushState({}, '', '/');
@@ -1769,6 +1887,7 @@
       if (!lb.classList.contains('is-trailer') && e.key === 'ArrowLeft') step(-1);
     } else if (!bio.hidden) { if (e.key === 'Escape') closeBio(); }
     else if (state.detailOpen && e.key === 'Escape') closeProject();
+    else if (state.catOpen && e.key === 'Escape') closeCategory();
   });
 
   /* ───────────────────────── Arranque ───────────────────────── */
@@ -1779,6 +1898,7 @@
       renderSpotlight();
       renderFeatured();
       renderOnset();
+      renderCats();
       renderFilters();
       renderGrid();
       renderFounder();

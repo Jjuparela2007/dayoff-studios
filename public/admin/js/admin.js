@@ -363,7 +363,7 @@
             <label>Slug (URL)<input name="slug" value="${esc(editing.slug)}" placeholder="se genera solo"></label>
             <label>Orden<input name="sort_order" type="number" value="${esc(editing.sort_order ?? 0)}"></label>
             <label class="span-all">Descripción<textarea name="description" rows="3">${esc(editing.description)}</textarea></label>
-            ${urlField('cover_url', 'Imagen de portada (aparece al pasar el ratón)', editing.cover_url)}
+            ${urlField('cover_url', 'Imagen o video de la franja en "Work" (ancho completo, horizontal: .jpg de ~2000 px o .mp4 corto sin sonido). Si lo dejas vacío se usa la imagen panorámica de su primer proyecto', editing.cover_url)}
           </div>
           <div class="savebar"><a class="btn btn--ghost" href="#categorias">Cancelar</a><button class="btn btn--primary">Guardar</button></div>
         </form>` : ''}

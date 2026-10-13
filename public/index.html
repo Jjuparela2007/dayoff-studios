@@ -183,17 +183,27 @@
       <button type="button" class="btn-ghost onset__more" hidden><span>Show all</span></button>
     </section>
 
-    <!-- ═══════════ OBRAS (galería filtrable) ═══════════ -->
+    <!-- ═══════════ OBRAS: una franja de ancho completo por categoría (imagen o video de fondo, parallax,
+         cada franja se queda quieta mientras la siguiente sube encima). Al hacer clic se abren sus proyectos. ═══════════ -->
     <section class="works" id="work">
-      <header class="section-head">
-        <span class="mono section-head__num">03</span>
-        <h2 class="section-title" data-reveal>Work</h2>
-      </header>
-      <div class="filters" role="tablist" aria-label="Filter by category">
-        <span class="filters__ink"></span>
-      </div>
-      <div class="grid"></div>
+      <h2 class="visually-hidden">Work</h2>
+      <div class="cats"></div>
     </section>
+
+    <!-- Proyectos de una categoría (se abre al hacer clic en su franja) -->
+    <div class="catview" hidden role="dialog" aria-modal="true" aria-labelledby="catview-title">
+      <div class="catview__scroll">
+        <header class="catview__head">
+          <p class="mono catview__kicker">Work</p>
+          <h2 class="catview__title" id="catview-title"></h2>
+          <button type="button" class="catview__close" aria-label="Close">&times;</button>
+        </header>
+        <div class="filters" role="tablist" aria-label="Filter by category">
+          <span class="filters__ink"></span>
+        </div>
+        <div class="grid"></div>
+      </div>
+    </div>
 
     <!-- ═══════════ ESTUDIO ═══════════ -->
     <section class="about" id="studio">
