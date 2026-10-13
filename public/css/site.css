@@ -919,6 +919,7 @@ i, em { font-style: normal; }
 /* Partes del ícono: relleno con el color del enlace, "cut" = calado con el color de fondo */
 .footer__social .fill { fill: currentColor; }
 .footer__social .cut { fill: var(--bg); }
+.footer__social .cut-stroke { fill: none; stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round; }
 .footer__social .stroke, .footer__social svg.stroke * { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .footer__social svg.stroke .fill { fill: currentColor; stroke: none; }
 @media (max-width: 600px) {

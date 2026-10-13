@@ -36,8 +36,12 @@ async function settings() {
   for (const [k, v] of Object.entries(FOUNDER_DEFAULTS)) if (s[k] == null) s[k] = v;
   return s;
 }
-const socials = (s) => ['instagram_url', 'facebook_url', 'linkedin_url', 'x_url', 'tiktok_url', 'youtube_url', 'vimeo_url', 'imdb_url']
-  .map((k) => String(s[k] || '').trim()).filter((u) => /^https:\/\/[^/]+\/.+/i.test(u));   // solo perfiles reales (no "https://facebook.com/")
+const socials = (s) => {
+  let extra = [];
+  try { extra = JSON.parse(s.extra_socials || '[]').map((m) => m && m.url); } catch { extra = []; }
+  return [...['instagram_url', 'facebook_url', 'linkedin_url', 'x_url', 'tiktok_url', 'youtube_url', 'vimeo_url'].map((k) => s[k]), ...extra]
+    .map((u) => String(u || '').trim()).filter((u) => /^https:\/\/[^/]+\/.+/i.test(u));   // solo perfiles reales (no "https://facebook.com/")
+};
 
 function organization(req, s) {
   const site = s.site_name || 'DayOff Studios';

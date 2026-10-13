@@ -378,6 +378,41 @@
   };
 
   /* ───────────────────────── Render: textos ───────────────────────── */
+  /* Íconos de redes adicionales: se elige según el dominio del enlace; si no se reconoce, ícono de enlace */
+  const SOCIAL_ICONS = [
+    [/imdb\.com/i, '<svg viewBox="0 0 24 24"><rect x="1.5" y="5.5" width="21" height="13" rx="2.5" class="fill"/><g class="cut"><rect x="4.4" y="8.6" width="1.5" height="6.8"/><path d="M7.2 8.6h1.9l.9 3.6.9-3.6h1.9v6.8h-1.4v-4.6l-1 4.6H9.3l-1-4.6v4.6H7.2z"/><path d="M13.6 8.6h1.9c1.5 0 2 .6 2 1.6v3.6c0 1-.5 1.6-2 1.6h-1.9zm1.5 1.2v4.4c.5 0 .8-.1.8-.6v-3.2c0-.5-.3-.6-.8-.6z"/><path d="M18.2 8.6h1.4v2.2c.3-.3.6-.4 1-.4.7 0 1 .4 1 1.1v2.7c0 .8-.4 1.2-1.1 1.2-.4 0-.7-.2-.9-.5l-.1.4h-1.3zm1.4 3.2v2.4c0 .3.1.4.3.4s.3-.1.3-.4v-2.4c0-.3-.1-.4-.3-.4s-.3.1-.3.4z"/></g></svg>'],
+    [/spotify\.com/i, '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" class="fill"/><g class="cut-stroke"><path d="M6.8 9.4c3.5-1 7.5-.7 10.6.9"/><path d="M7.4 12.6c2.9-.8 6-.5 8.6.8"/><path d="M8 15.5c2.2-.6 4.5-.4 6.5.6"/></g></svg>'],
+    [/(whatsapp\.com|wa\.me)/i, '<svg viewBox="0 0 24 24" class="stroke"><path d="M4.5 19.5l1.1-3.6A8.3 8.3 0 1 1 8.4 18.6z"/><path d="M9.2 8.6c.3-.6.9-.6 1.2 0l.7 1.5c.1.3 0 .6-.2.8l-.5.5c.6 1.2 1.6 2.2 2.8 2.8l.5-.5c.2-.2.5-.3.8-.2l1.5.7c.6.3.6.9 0 1.2-.8.5-1.8.6-2.7.2a8.3 8.3 0 0 1-4.3-4.3c-.4-.9-.3-1.9.2-2.7z"/></svg>'],
+    [/threads\.(net|com)/i, '<svg viewBox="0 0 24 24" class="stroke"><path d="M16.8 11.2c-.5-2.6-2.4-3.9-4.8-3.9-3 0-4.8 2.2-4.8 4.9s1.7 5 4.9 5c2.6 0 4.4-1.4 4.4-3.5 0-1.6-1.3-2.7-3.5-2.7-1.9 0-3 .9-3 2.1 0 1 .9 1.8 2.3 1.8 2.3 0 3.6-2 3.6-5.2 0-4.4-2.6-6.9-6.3-6.9-4.4 0-7 3.3-7 8.4s2.7 8.4 7.2 8.4c3 0 5.1-1.2 6.4-3.4"/></svg>'],
+    [/behance\.net/i, '<svg viewBox="0 0 24 24"><rect x="1.5" y="3.5" width="21" height="17" rx="4" class="fill"/><g class="cut"><path d="M4.6 8h3.6c1.5 0 2.4.7 2.4 1.9 0 .8-.4 1.3-1 1.6.9.2 1.4.9 1.4 1.8 0 1.4-1.1 2.2-2.7 2.2H4.6zm1.6 1.3v1.8h1.7c.6 0 1-.3 1-.9s-.4-.9-1-.9zm0 3v2h1.9c.7 0 1.1-.3 1.1-1s-.4-1-1.1-1z"/><path d="M14.4 8.4h3.8v.9h-3.8z"/><path d="M16.3 10.2c1.8 0 2.8 1.2 2.7 3.2h-4.1c.1.9.6 1.4 1.4 1.4.6 0 1-.3 1.2-.7h1.4c-.3 1.2-1.3 1.9-2.6 1.9-1.8 0-2.9-1.2-2.9-2.9s1.1-2.9 2.9-2.9zm-1.4 2.2h2.7c-.1-.8-.6-1.2-1.3-1.2s-1.2.4-1.4 1.2z"/></g></svg>'],
+    [/pinterest\./i, '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" class="fill"/><path class="cut" d="M12.3 5.6c-3.6 0-5.4 2.6-5.4 4.7 0 1.3.5 2.4 1.5 2.8.2.1.3 0 .4-.2l.2-.6c0-.2 0-.3-.1-.4-.3-.4-.5-.9-.5-1.5 0-2 1.5-3.7 3.8-3.7 2.1 0 3.2 1.3 3.2 2.9 0 2.2-1 4.1-2.4 4.1-.8 0-1.4-.7-1.2-1.5.2-1 .7-2 .7-2.7 0-.6-.3-1.1-1-1.1-.8 0-1.4.8-1.4 1.9 0 .7.2 1.2.2 1.2l-1 4.1c-.3 1.2 0 2.7 0 2.9 0 .1.1.1.2 0 .1-.1 1-1.3 1.4-2.5l.5-2.1c.3.5 1 .9 1.8.9 2.4 0 4-2.2 4-5.1 0-2.2-1.9-4.3-4.7-4.3z"/></svg>'],
+    [/letterboxd\.com/i, '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="3.6" class="fill"/><circle cx="12" cy="12" r="3.6" class="fill"/><circle cx="18.5" cy="12" r="3.6" class="fill"/></svg>'],
+    [/(t\.me|telegram\.)/i, '<svg viewBox="0 0 24 24" class="stroke"><path d="M21 4 2.8 11.2l5.7 2 2 6.3 3.2-3.8 4.6 3.4z"/><path d="M8.5 13.2 21 4"/></svg>'],
+    [/soundcloud\.com/i, '<svg viewBox="0 0 24 24" class="stroke"><path d="M10 17.5V8.3c.9-.5 1.9-.8 3-.8 3 0 5.4 2.2 5.8 5a2.6 2.6 0 0 1-.5 5z"/><path d="M7.5 17.5v-7M5 17.5v-5M2.5 17.5v-3"/></svg>'],
+    [/(snapchat\.com)/i, '<svg viewBox="0 0 24 24" class="stroke"><path d="M12 3.5c-2.9 0-4.6 2.1-4.6 4.6v2.3l-1.6.3c-.4.1-.4.6 0 .8l1.3.6c-.5 1.7-1.8 3.2-3.6 3.8.6.9 1.9 1 2.6 1.1.2.5.3 1 .6 1.3.9-.2 1.8-.2 2.6.2.8.4 1.6 1 2.7 1s1.9-.6 2.7-1c.8-.4 1.7-.4 2.6-.2.3-.3.4-.8.6-1.3.7-.1 2-.2 2.6-1.1-1.8-.6-3.1-2.1-3.6-3.8l1.3-.6c.4-.2.4-.7 0-.8l-1.6-.3V8.1c0-2.5-1.7-4.6-4.6-4.6z"/></svg>'],
+    [/(facebook\.com|fb\.com)/i, '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" class="fill"/><path class="cut" d="M13.4 21v-6.9h2.3l.35-2.7h-2.65V9.7c0-.8.25-1.3 1.35-1.3h1.4V6c-.25 0-1.05-.1-2-.1-2 0-3.35 1.2-3.35 3.45v2.05H8.5v2.7h2.3V21z"/></svg>'],
+  ];
+  const LINK_ICON = '<svg viewBox="0 0 24 24" class="stroke"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>';
+  function renderExtraSocials(s) {
+    const nav = $('.footer__social');
+    if (!nav) return;
+    $$('[data-extra-social]', nav).forEach((a) => a.remove());
+    let list = [];
+    try { list = JSON.parse(s.extra_socials || '[]'); } catch { list = []; }
+    list.forEach((m) => {
+      const url = safeUrl(m && m.url);
+      if (!/^https?:\/\//i.test(url)) return;
+      const icon = (SOCIAL_ICONS.find(([re]) => re.test(url)) || [])[1] || LINK_ICON;
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.dataset.extraSocial = '';
+      a.setAttribute('aria-label', m.name || new URL(url).hostname.replace(/^www\./, ''));
+      a.title = m.name || '';
+      a.innerHTML = icon;
+      nav.append(a);
+    });
+  }
+
   function applySettings() {
     const s = state.settings;
     document.title = `${s.site_name || 'DayOff Studios'} — ${s.slogan || 'Film Production Company'}`;
@@ -401,6 +436,8 @@
       if (!href) { el.remove(); return; }
       el.href = href;
     });
+    // Otras redes (panel → Textos del sitio → "Otras redes"): se agregan al pie con su ícono
+    renderExtraSocials(s);
     // Copyright con el año en curso: "© 2026 DayOff Studios. Todos los derechos reservados."
     const copy = String(s.footer_text || s.site_name || 'DayOff Studios').replace(/^\s*©\s*(\d{4}\s*)?/, '');
     $$('[data-copyright]').forEach((el) => { el.textContent = `© ${new Date().getFullYear()} ${copy}`; });

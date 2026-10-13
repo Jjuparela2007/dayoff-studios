@@ -276,6 +276,7 @@
     ['Redes y pie (deja vacío el enlace de una red para ocultar su ícono)', [
       ['facebook_url', 'Facebook'], ['instagram_url', 'Instagram'], ['linkedin_url', 'LinkedIn'], ['x_url', 'X (Twitter)'],
       ['youtube_url', 'YouTube'], ['vimeo_url', 'Vimeo'], ['tiktok_url', 'TikTok'],
+      ['extra_socials', 'Otras redes (IMDb, Spotify, WhatsApp, Threads, Behance, Pinterest, Letterboxd…)', 'socials'],
       ['footer_text', 'Copyright (el año se añade solo: "DayOff Studios. Todos los derechos reservados.")']]]
   ];
 
@@ -330,6 +331,41 @@
     });
   }
 
+  /* ── Otras redes (se guarda como JSON en el ajuste extra_socials: [{ name, url }]) ── */
+  function socialListField(name, label, value) {
+    return `<div class="span-all social-list" data-name="${name}">
+      <label>${label}</label>
+      <p class="hint">Agrega las que quieras: nombre y enlace completo (https://…). El ícono se elige solo según el enlace; si la red no se reconoce, se muestra un ícono de enlace.</p>
+      <input type="hidden" name="${name}" value="${esc(value || '[]')}">
+      <div class="rows" style="margin:12px 0"></div>
+      <button type="button" class="btn btn--ghost btn--sm" data-sadd>+ Agregar red</button>
+    </div>`;
+  }
+  const socialRow = (m = {}) => `<div class="row row--social" draggable="true">
+    <span class="handle">⋮⋮</span>
+    <input data-k="name" value="${esc(m.name)}" placeholder="Nombre (ej. IMDb)">
+    <input data-k="url" value="${esc(m.url)}" placeholder="https://www.imdb.com/…">
+    <button type="button" class="btn btn--danger btn--sm" data-remove>×</button>
+  </div>`;
+  function bindSocialList() {
+    $$('.social-list').forEach((box) => {
+      const rows = $('.rows', box);
+      let list = [];
+      try { list = JSON.parse($('input[type=hidden]', box).value || '[]'); } catch { list = []; }
+      list.forEach((m) => rows.insertAdjacentHTML('beforeend', socialRow(m)));
+      $('[data-sadd]', box).addEventListener('click', () => { rows.insertAdjacentHTML('beforeend', socialRow()); $('.row:last-child [data-k=name]', rows).focus(); });
+      rows.addEventListener('click', (e) => { if (e.target.closest('[data-remove]')) e.target.closest('.row').remove(); });
+      enableDragSort(rows);
+    });
+  }
+  function serializeSocialList() {
+    $$('.social-list').forEach((box) => {
+      const list = $$('.row', box).map((r) => ({ name: $('[data-k=name]', r).value.trim(), url: $('[data-k=url]', r).value.trim() }))
+        .filter((m) => /^https?:\/\//i.test(m.url));
+      $('input[type=hidden]', box).value = JSON.stringify(list);
+    });
+  }
+
   views.textos = async () => {
     const s = await api('/api/admin/settings');
     view.innerHTML = `
@@ -338,6 +374,7 @@
         ${SETTINGS_GROUPS.map(([title, fields]) => `
           <div class="panel"><h2>${title}</h2><div class="form-grid">
             ${fields.map(([k, label, type, opts]) => type === 'videos' ? videoListField(k, label, s[k])
+              : type === 'socials' ? socialListField(k, label, s[k])
               : type === 'select' ? `<label class="span-all" data-field="${k}">${label}<select name="${k}">${opts.map(([v, l]) => `<option value="${v}" ${(s[k] || opts[0][0]) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`
               : type === 'url' ? urlField(k, label, s[k])
               : type === 'textarea' ? `<label class="span-all">${label}<textarea name="${k}" rows="6">${esc(s[k])}</textarea></label>`
@@ -346,6 +383,7 @@
         <div class="savebar"><a class="btn btn--ghost" href="/" target="_blank">Ver sitio ↗</a><button class="btn btn--primary">Guardar cambios</button></div>
       </form>`;
     bindVideoList();
+    bindSocialList();
     // Portada: según el tipo elegido, se muestran los campos del showreel o el del link de YouTube/Vimeo
     const modeSel = $('[name=hero_mode]');
     if (modeSel) {
@@ -369,6 +407,7 @@
     $('#settings-form').addEventListener('submit', (e) => {
       e.preventDefault();
       serializeVideoList();
+      serializeSocialList();
       run($('.savebar .btn--primary'), () => api('/api/admin/settings', { method: 'PUT', body: formData(e.target) }));
     });
   };
