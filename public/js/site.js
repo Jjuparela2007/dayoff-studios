@@ -534,8 +534,9 @@
   }
 
   function renderFeatured() {
-    let list = state.projects.filter((p) => +p.featured);
-    if (!list.length) list = state.projects.slice(0, 4);
+    // Solo los proyectos marcados como "Destacado" en el panel; si no hay ninguno, la sección se oculta (como News)
+    const list = state.projects.filter((p) => +p.featured);
+    $('#featured').hidden = !list.length;
     const cat = (id) => state.categories.find((c) => c.id === id)?.name || '';
     $('.featured__track').innerHTML = list.map((p, i) => `
       <a class="feat" href="/project/${esc(p.slug)}" data-slug="${esc(p.slug)}">
@@ -549,7 +550,6 @@
           <span class="feat__idx">${String(i + 1).padStart(2, '0')}</span>
         </div>
       </a>`).join('');
-    if (!list.length) $('#featured').hidden = true;
   }
 
   /* ───────────────────────── Render: On set (galería de videos del estudio) ───────────────────────── */
@@ -1030,8 +1030,8 @@
     gsap.from(splitWords($('.contact__title')), { yPercent: 110, duration: 1.2, stagger: .06, ease: 'power4.out', scrollTrigger: { trigger: '.contact', start: 'top 70%' } });
     gsap.from('.footer__brand, .footer__social', { y: 24, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '.footer', start: 'top 95%' } });
 
-    // Destacados: scroll horizontal fijado (solo en pantallas grandes)
-    ST.matchMedia({
+    // Destacados: scroll horizontal fijado (solo en pantallas grandes; nada si la sección está oculta)
+    if (!$('#featured').hidden) ST.matchMedia({
       '(min-width: 761px)': () => {
         const track = $('.featured__track');
         const dist = () => Math.max(0, track.scrollWidth - innerWidth);
