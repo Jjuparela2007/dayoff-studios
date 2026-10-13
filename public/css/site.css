@@ -163,6 +163,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero__media video { opacity: 0; transition: opacity 1.2s ease; }
 .hero__media video.is-active { opacity: 1; }
 .hero__media.has-video .hero__poster { animation: none; }
+/* Fondo con link de YouTube/Vimeo: se agranda para cubrir toda la portada y ocultar los controles del reproductor */
+.hero__embed { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hero__embed iframe {
+  position: absolute; top: 50%; left: 50%; width: max(100%, 177.78vh); height: max(100%, 56.25vw);
+  border: 0; transform: translate(-50%, -50%) scale(1.18); opacity: 0; transition: opacity 1.2s ease;
+}
+.hero__embed iframe.is-ready { opacity: 1; }
 @keyframes kenburns { from { transform: scale(1.15) translate(0, 0); } to { transform: scale(1.28) translate(-2%, -2%); } }
 /* Sombra suave: arriba para que se lea el menú, abajo para el título */
 .hero__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,9,8,.55) 0%, rgba(10,9,8,0) 22%, rgba(10,9,8,0) 50%, rgba(10,9,8,.75) 100%); }

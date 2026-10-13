@@ -251,6 +251,8 @@
       ['latest_intro_kicker', 'Antetítulo pequeño (ej. Latest release)'],
       ['latest_intro', 'Descripción (si la dejas vacía no se muestra; deja una línea en blanco para separar párrafos)', 'textarea']]],
     ['Portada (hero)', [['hero_kicker', 'Antetítulo'], ['hero_title', 'Título principal — usa *palabra* para resaltarla en dorado'],
+      ['hero_mode', 'Fondo de la portada', 'select', [['reel', 'Showreel — clips de video (MP4) en bucle con fundido'], ['embed', 'Un video de YouTube o Vimeo']]],
+      ['hero_embed_url', 'Link de YouTube o Vimeo (se reproduce de fondo, sin sonido y en bucle). Si el video no permite insertarse en otras páginas, se verá la imagen de respaldo'],
       ['hero_videos', 'Videos de portada (showreel en bucle infinito)', 'videos'],
       ['hero_clip_seconds', 'Segundos por clip (ej. 7; si el video es más corto, se ve completo)'],
       ['hero_image_url', 'Imagen de respaldo (se ve mientras carga el primer video o si no hay videos)', 'url']]],
@@ -281,7 +283,8 @@
   function videoListField(name, label, value) {
     return `<div class="span-all video-list" data-name="${name}">
       <label>${label}</label>
-      <p class="hint">Se reproducen en orden, con fundido entre uno y otro, y vuelven a empezar al terminar. Usa clips MP4 cortos (5–15 s, sin audio, idealmente &lt; 10 MB cada uno).</p>
+      <p class="hint">Se reproducen en orden, con fundido entre uno y otro, y vuelven a empezar al terminar. Usa clips MP4 cortos (5–15 s, sin audio, idealmente &lt; 10 MB cada uno).
+</p>
       <input type="hidden" name="${name}" value="${esc(value || '[]')}">
       <div class="rows" style="margin:12px 0"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -334,14 +337,35 @@
       <form id="settings-form">
         ${SETTINGS_GROUPS.map(([title, fields]) => `
           <div class="panel"><h2>${title}</h2><div class="form-grid">
-            ${fields.map(([k, label, type]) => type === 'videos' ? videoListField(k, label, s[k])
+            ${fields.map(([k, label, type, opts]) => type === 'videos' ? videoListField(k, label, s[k])
+              : type === 'select' ? `<label class="span-all" data-field="${k}">${label}<select name="${k}">${opts.map(([v, l]) => `<option value="${v}" ${(s[k] || opts[0][0]) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`
               : type === 'url' ? urlField(k, label, s[k])
               : type === 'textarea' ? `<label class="span-all">${label}<textarea name="${k}" rows="6">${esc(s[k])}</textarea></label>`
-              : `<label>${label}<input name="${k}" value="${esc(s[k])}"></label>`).join('')}
+              : `<label data-field="${k}"${k === 'hero_embed_url' ? ' class="span-all"' : ''}>${label}<input name="${k}" value="${esc(s[k])}"></label>`).join('')}
           </div></div>`).join('')}
         <div class="savebar"><a class="btn btn--ghost" href="/" target="_blank">Ver sitio ↗</a><button class="btn btn--primary">Guardar cambios</button></div>
       </form>`;
     bindVideoList();
+    // Portada: según el tipo elegido, se muestran los campos del showreel o el del link de YouTube/Vimeo
+    const modeSel = $('[name=hero_mode]');
+    if (modeSel) {
+      // Si nunca se eligió, se adivina por lo que hay guardado (antes un link de YouTube podía ir primero en la lista)
+      if (!s.hero_mode) {
+        let list = []; try { list = JSON.parse(s.hero_videos || '[]'); } catch { /* vacío */ }
+        if (/(youtube\.com|youtu\.be|vimeo\.com)\//i.test(list[0] || '')) {
+          modeSel.value = 'embed';
+          const emb = $('[name=hero_embed_url]'); if (emb && !emb.value) emb.value = list[0];
+        }
+      }
+      const reelOnly = [$('.video-list[data-name=hero_videos]'), $('[data-field=hero_clip_seconds]')];
+      const embedOnly = [$('[data-field=hero_embed_url]')];
+      const sync = () => {
+        const embed = modeSel.value === 'embed';
+        reelOnly.forEach((el) => { if (el) el.hidden = embed; });
+        embedOnly.forEach((el) => { if (el) el.hidden = !embed; });
+      };
+      modeSel.addEventListener('change', sync); sync();
+    }
     $('#settings-form').addEventListener('submit', (e) => {
       e.preventDefault();
       serializeVideoList();

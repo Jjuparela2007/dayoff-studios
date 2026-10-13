@@ -84,6 +84,8 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
   for (const [k, v] of [['hero_clip_seconds', '7'], ['preloader_tagline', 'SHOW YOURSELF'],
     // Galería de videos: título, nombre en el menú y textos del rollo de cámara
     ['latest_intro_kicker', 'Latest release'], ['latest_intro', ''],
+    // Fondo de la portada: 'reel' (clips MP4) o 'embed' (un video de YouTube/Vimeo)
+    ['hero_embed_url', ''],
     ['onset_title', 'Featured Work'], ['onset_nav', 'Featured Work'], ['meter_left', '1\\400  ISO 400'], ['meter_right', 'AWB  FPS 24  f1.8'],
     // Redes nuevas del footer (con enlaces genéricos: cámbialos en el panel o déjalos vacíos para ocultarlas)
     ['facebook_url', 'https://facebook.com/'], ['linkedin_url', 'https://linkedin.com/'],

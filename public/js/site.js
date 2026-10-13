@@ -396,7 +396,24 @@
     let videos = [];
     try { videos = JSON.parse(s.hero_videos || '[]'); } catch { videos = []; }
     if (!videos.length && s.hero_video_url) videos = [s.hero_video_url]; // compatibilidad con la versión anterior
-    heroReel.start(videos.map(safeUrl).filter(Boolean), image, parseFloat(s.hero_clip_seconds) || 7);
+    videos = videos.map(safeUrl).filter(Boolean);
+    // YouTube/Vimeo de fondo (sin sonido, en bucle). No se pueden encadenar con fundidos: para un showreel usa MP4.
+    const isEmb = (u) => /(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u || '');
+    // Panel → Textos del sitio → "Fondo de la portada": showreel de clips o un video de YouTube/Vimeo
+    const embedUrl = safeUrl(s.hero_embed_url);
+    const heroEmbed = s.hero_mode === 'embed' ? (isEmb(embedUrl) ? embedUrl : '')
+      : s.hero_mode === 'reel' ? '' : (isEmb(videos[0]) ? videos[0] : '');   // sin elegir: compatibilidad con la versión anterior
+    if (heroEmbed) {
+      heroReel.start([], image, 7);              // imagen de respaldo mientras carga (y si el navegador no deja reproducir)
+      const media = $('.hero__media');
+      media.classList.add('has-embed');
+      const box = document.createElement('div');
+      box.className = 'hero__embed';
+      media.append(box);
+      backgroundTrailer(box, heroEmbed);
+    } else {
+      heroReel.start(videos.filter((u) => !/(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u)), image, parseFloat(s.hero_clip_seconds) || 7);
+    }
 
     // Imagen de "Estudio"
     const aboutImg = safeUrl(s.about_image_url) || safeUrl(state.projects[1]?.backdrop_url) || image;
