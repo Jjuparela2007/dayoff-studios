@@ -704,7 +704,8 @@
      Clic en una franja → la franja se agranda hasta ocupar toda la pantalla (zoom) y debajo aparecen
      sus proyectos: una franja de ancho completo por proyecto con su video de fondo (el primer video de
      su galería o su tráiler; si no tiene, su imagen panorámica), el título abajo a la izquierda y una
-     línea "Watch …". Las imágenes hacen parallax y zoom al pasar. Clic en un proyecto → su ficha. */
+     línea "Watch …". Efecto persiana: cada video queda fijo detrás de la pantalla y su franja funciona
+     como una ventana; al bajar, la franja siguiente sube y "tapa" a la anterior. Clic en un proyecto → su ficha. */
   const catview = $('.catview');
   if (catview) document.body.append(catview);   // fuera de <main>, para que ninguna transformación la afecte
   const cvScroll = catview && $('.catview__scroll', catview);
@@ -778,7 +779,9 @@
         scrollTrigger: { scroller: cvScroll, trigger: '.catview__hero', start: 'top top', end: 'bottom top', scrub: true } }));
       bands.forEach((b) => {
         const st = { scroller: cvScroll, trigger: b, start: 'top bottom', end: 'bottom top', scrub: true };
-        cvTweens.push(gsap.fromTo($('.pband__media', b), { yPercent: -12, scale: 1.35 }, { yPercent: 12, scale: 1.05, ease: 'none', scrollTrigger: st }));
+        // El video está fijo detrás (efecto persiana): solo hace un leve zoom mientras su franja sube
+        cvTweens.push(gsap.fromTo($('.pband__media', b), { scale: 1.18 }, { scale: 1, ease: 'none',
+          scrollTrigger: { ...st, end: 'top top' } }));
         cvTweens.push(gsap.fromTo($('.pband__body', b), { y: 80, opacity: 0 }, { y: 0, opacity: 1, ease: 'power2.out',
           scrollTrigger: { scroller: cvScroll, trigger: b, start: 'top 85%', end: 'top 35%', scrub: true } }));
       });

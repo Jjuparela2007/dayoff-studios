@@ -359,8 +359,10 @@ section { position: relative; }
 .catview { position: fixed; inset: 0; z-index: 990; background: #000; color: #fff; }
 .catview[hidden] { display: none; }
 .catview__scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
-.catview__hero { position: relative; height: 100vh; height: 100svh; display: grid; place-items: center; overflow: hidden; isolation: isolate; }
-.catview__media { position: absolute; inset: 0; z-index: -2; }
+/* Efecto persiana: cada franja recorta (clip-path) un fondo FIJO a la pantalla; al hacer scroll la siguiente
+   franja sube mostrando su propio video, como si se deslizara encima de la anterior */
+.catview__hero { position: relative; height: 100vh; height: 100svh; display: grid; place-items: center; overflow: hidden; isolation: isolate; clip-path: inset(0); }
+.catview__media { position: fixed; inset: 0; z-index: -2; }
 .catview__media img, .catview__media video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .catview__hero .cat-band__shade { opacity: .25; }
 .catview__heading { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 0 var(--gutter); }
@@ -374,8 +376,8 @@ section { position: relative; }
 .catview__close:hover { background: #fff; color: #000; }
 /* Cada proyecto: franja de ancho completo con su video */
 .catview__list { display: grid; }
-.pband { position: relative; display: block; height: clamp(360px, 82vh, 920px); overflow: hidden; color: #fff; text-decoration: none; isolation: isolate; background: #0b0b0b; }
-.pband__media { position: absolute; inset: -12% 0; z-index: -2; will-change: transform; }
+.pband { position: relative; display: block; height: 100vh; height: 100svh; overflow: hidden; color: #fff; text-decoration: none; isolation: isolate; background: #0b0b0b; clip-path: inset(0); }
+.pband__media { position: fixed; inset: 0; z-index: -2; will-change: transform; }
 .pband__media img, .pband__media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .pband__media video { opacity: 0; transition: opacity 1s; }
 .pband.is-loaded .pband__media video, .pband__media video[poster] { opacity: 1; }
