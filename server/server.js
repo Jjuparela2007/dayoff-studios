@@ -50,6 +50,11 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/public'));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
+/* SEO: cada página con su título/descripción/imagen + redirecciones del sitio anterior (ver seo.js) */
+const seo = require('./seo');
+app.get(['/', '/index.html'], seo.home);
+app.use(seo.legacy);
+
 /* Imágenes optimizadas (más livianas, en WebP y al tamaño justo): /img/<ancho>/uploads/foto.jpg */
 app.use(require('./images')(ROOT));
 
@@ -87,7 +92,8 @@ app.get('/sitemap.xml', async (req, res, next) => {
 });
 
 /* Ficha de proyecto con URL propia: /project/my-film (también acepta la ruta antigua /proyecto/) → misma página, el JS abre la ficha */
-app.get(['/project/:slug', '/proyecto/:slug', '/director/:slug'], (req, res) => res.sendFile(path.join(ROOT, 'public', 'index.html')));
+app.get(['/project/:slug', '/proyecto/:slug'], seo.project);
+app.get('/director/:slug', seo.director);
 
 /* Manejador central de errores */
 // eslint-disable-next-line no-unused-vars
