@@ -1,9 +1,0 @@
-# No subir a Vercel
-uploads/
-.env
-.env.*
-!.env.example
-!.env.production.example
-*.pem
-*.log
-media-sources/
