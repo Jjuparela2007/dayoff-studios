@@ -659,15 +659,23 @@
    * Cada fila tiene un formato fijo, así la altura no cambia mientras cargan los videos
    * y las escenas fijadas de más abajo no se descuadran.
    */
-  const ONSET_LIMIT = 9;
+  const ONSET_LIMIT = 11;   // un ciclo completo de la plantilla; el resto con "Show all"
   // Filas que se repiten: cuántos videos lleva cada una, su formato (ancho/alto de la fila) y el ancho de cada cuadro
+  /* Plantilla del muro "Featured Work": se repite en ciclo, así cada video/foto nuevo cae en un espacio
+     distinto (ancho, cuadrados, rectángulos…) y nunca quedan muchos anchos seguidos.
+     n = cuántos van en la fila · ar = proporción de la fila completa · w = ancho relativo de cada uno.
+     Un ciclo = 11 elementos: ancho · 2 casi cuadrados · 3 cuadrados · 2 rectángulos · panorámico · 2 casi cuadrados (al revés)
+     (termina en una fila doble para que al repetirse nunca queden dos anchos seguidos) */
   const ONSET_ROWS = [
-    { n: 1, ar: 2.05 },
-    { n: 2, ar: 1.62, w: [42.5, 57.5] },
-    { n: 2, ar: 2.72 },
-    { n: 1, ar: 2.4 },
-    { n: 1, ar: 2.4 }
+    { n: 1, ar: 2.05 },                      // ancho, de cine
+    { n: 2, ar: 1.62, w: [42.5, 57.5] },     // vertical + casi cuadrado
+    { n: 3, ar: 3.02 },                      // tres cuadrados
+    { n: 2, ar: 2.72 },                      // dos rectángulos 16:9 aprox.
+    { n: 1, ar: 2.4 },                       // ancho panorámico
+    { n: 2, ar: 1.62, w: [57.5, 42.5] }      // casi cuadrado + vertical (espejo)
   ];
+  // Si al final sobran menos de los que pide la fila, se usa una que encaje (sin dejar huecos)
+  const ONSET_FIT = { 1: { n: 1, ar: 2.05 }, 2: { n: 2, ar: 2.72 }, 3: { n: 3, ar: 3.02 } };
   const isVideoFile = (u) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u) || /\/video\/upload\//.test(u);
   const isEmbed = (u) => /(youtube\.com|youtu\.be|vimeo\.com)\//i.test(u);
   let onsetAll = false, onsetIO = null;
@@ -1042,11 +1050,11 @@
         ${m.caption ? `<span class="shot__cap">${esc(m.caption)}</span>` : ''}
       </button>`;
 
-    // Reparte los videos en filas siguiendo el patrón; si al final sobra uno, va en una fila ancha
+    // Reparte los videos y fotos en filas siguiendo la plantilla (ONSET_ROWS), en el orden del panel
     let html = '', i = 0, r = 0;
     while (i < items.length) {
       let row = ONSET_ROWS[r % ONSET_ROWS.length];
-      if (row.n > items.length - i) row = { n: 1, ar: 2.05 };
+      if (row.n > items.length - i) row = ONSET_FIT[items.length - i] || ONSET_FIT[1];
       const hide = !onsetAll && i >= ONSET_LIMIT;
       html += `<div class="onset__row" style="--ar:${row.ar}"${hide ? ' hidden' : ''}>${items.slice(i, i + row.n).map((m, k) => tile(m, i + k, row.w && row.w[k])).join('')}</div>`;
       i += row.n; r++;
