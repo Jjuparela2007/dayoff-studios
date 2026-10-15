@@ -440,7 +440,9 @@
       const href = v ? (prefix ? `${prefix}:${v}` : safeUrl(v)) : '';
       // Sin enlace en el panel → el ícono se quita del todo (un <a> sin destino lo marca Google como "no rastreable")
       if (!href) { el.remove(); return; }
-      el.href = href;
+      // Asunto ya escrito en el correo (data-subject en el HTML; {site} = nombre del sitio)
+      const subject = el.dataset.subject && el.dataset.subject.replace('{site}', s.site_name || 'DayOff Studios');
+      el.href = prefix === 'mailto' && subject ? `${href}?subject=${encodeURIComponent(subject)}` : href;
     });
     // Otras redes (panel → Textos del sitio → "Otras redes"): se agregan al pie con su ícono
     renderExtraSocials(s);
@@ -1434,6 +1436,85 @@
   }
 
   /* ───────────────────────── Interacciones globales ───────────────────────── */
+  /* ── Menú de correo (solo en computador) ──
+     Un link mailto: abre la app de correo predeterminada del PC (a menudo Outlook/Correo de Windows),
+     aunque la persona use Gmail en el navegador. En computador, al hacer clic se muestra un menú:
+     Gmail · Outlook · App de correo · Copiar email. En celular se abre la app directo (comportamiento normal). */
+  function mailMenu() {
+    const desktop = matchMedia('(hover: hover) and (pointer: fine)');
+    let menu = null, opener = null;
+    const close = () => {
+      if (!menu) return;
+      menu.remove(); menu = null;
+      removeEventListener('keydown', onKey); removeEventListener('scroll', close, true); removeEventListener('resize', close);
+      if (opener) { opener.setAttribute('aria-expanded', 'false'); opener = null; }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { const o = opener; close(); o && o.focus(); } };
+    document.addEventListener('click', (e) => {
+      if (menu && !menu.contains(e.target)) close();
+      const a = e.target.closest('a[href^="mailto:"]');
+      if (!a || !desktop.matches || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      const [addr, qs] = href.slice(7).split('?');
+      const to = decodeURIComponent(addr || '');
+      if (!to) return;
+      const subject = new URLSearchParams(qs || '').get('subject') || '';
+      const enc = encodeURIComponent;
+      const gmail = `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(to)}${subject ? `&su=${enc(subject)}` : ''}`;
+      const outlook = `https://outlook.live.com/mail/0/deeplink/compose?to=${enc(to)}${subject ? `&subject=${enc(subject)}` : ''}`;
+      const ico = {
+        gmail: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5v11h4v-7l5 3.8 5-3.8v7h4v-11l-9 6.8z"/></svg>',
+        outlook: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+        app: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8M12 8v8"/></svg>',
+        copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
+      };
+      close();
+      opener = a; a.setAttribute('aria-expanded', 'true');
+      menu = document.createElement('div');
+      menu.className = 'mailmenu';
+      menu.setAttribute('role', 'menu');
+      menu.innerHTML = `
+        <p class="mailmenu__to mono">${esc(to)}</p>
+        <a role="menuitem" href="${esc(gmail)}" target="_blank" rel="noopener">${ico.gmail}<span>Gmail</span></a>
+        <a role="menuitem" href="${esc(outlook)}" target="_blank" rel="noopener">${ico.outlook}<span>Outlook</span></a>
+        <a role="menuitem" href="${esc(href)}" data-mail-app>${ico.app}<span>Mail app</span></a>
+        <button type="button" role="menuitem" data-mail-copy>${ico.copy}<span>Copy email</span></button>`;
+      document.body.appendChild(menu);
+      // Posición: debajo del link (o encima si no cabe), sin salirse de la pantalla
+      const r = a.getBoundingClientRect(), m = menu.getBoundingClientRect(), pad = 12;
+      let top = r.bottom + 10;
+      if (top + m.height > innerHeight - pad) top = Math.max(pad, r.top - m.height - 10);
+      let left = Math.min(Math.max(pad, e.clientX - m.width / 2), innerWidth - m.width - pad);
+      menu.style.top = `${top}px`; menu.style.left = `${left}px`;
+      menu.querySelector('a').focus({ preventScroll: true });
+      menu.addEventListener('click', async (ev) => {
+        const item = ev.target.closest('[role=menuitem]');
+        if (!item) return;
+        ev.stopPropagation();
+        if (item.hasAttribute('data-mail-app')) { ev.preventDefault(); close(); location.href = href; return; }
+        if (item.hasAttribute('data-mail-copy')) {
+          try { await navigator.clipboard.writeText(to); } catch {
+            const t = document.createElement('textarea'); t.value = to; document.body.appendChild(t); t.select();
+            try { document.execCommand('copy'); } catch { /* sin portapapeles */ } t.remove();
+          }
+          item.querySelector('span').textContent = 'Copied!';
+          setTimeout(close, 900);
+          return;
+        }
+        setTimeout(close, 50);   // Gmail / Outlook abren en una pestaña nueva
+      });
+      menu.addEventListener('keydown', (ev) => {
+        if (!['ArrowDown', 'ArrowUp'].includes(ev.key)) return;
+        ev.preventDefault();
+        const items = [...menu.querySelectorAll('[role=menuitem]')];
+        const i = items.indexOf(document.activeElement);
+        items[(i + (ev.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+      });
+      addEventListener('keydown', onKey); addEventListener('scroll', close, true); addEventListener('resize', close);
+    }, true);
+  }
+
   function uiInteractions() {
     // Header: se oculta al bajar, reaparece al subir
     let lastY = scrollY;
@@ -2033,7 +2114,7 @@
 
         ${s.contact_email ? `<footer class="f-cta">
           <p class="mono">Have a story to tell?</p>
-          <a href="mailto:${esc(s.contact_email)}">Work with ${esc(first)} <span>→</span></a>
+          <a href="mailto:${esc(s.contact_email)}?subject=${encodeURIComponent(`Hi ${first}, I'd love to work with you on my next project`)}">Work with ${esc(first)} <span>→</span></a>
         </footer>` : ''}
       </article>`;
 
@@ -2202,6 +2283,7 @@
     }
     moveInk();
     uiInteractions();
+    mailMenu();
     await preloader.finish((at) => { heroReel.begin(at + .6); heroIntro(at); });   // at+.6 ≈ fin del zoom del logo
     // ScrollTrigger también "recuerda" la posición anterior y la restaura: se le pide que no lo haga
     if (ST) ST.clearScrollMemory('manual');
