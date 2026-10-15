@@ -560,7 +560,7 @@
             <label>Tipo<select name="kind" id="news-kind">${NEWS_KINDS.map(([v, l]) => `<option value="${v}" ${editing.kind === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
               <span class="hint" id="news-kind-hint"></span></label>
             <label>Fecha<input type="date" name="published_at" value="${esc(editing.published_at || '')}"></label>
-            <label class="span-all">Título — titular de la nota, nombre del premio (ej. "Best Short Film") o del video<input name="title" required value="${esc(editing.title)}"></label>
+            <label class="span-all">Título — titular de la nota o del video. En premios y festivales: la película, o "Distinción - Película" (con un guion y espacios) para mostrar la distinción arriba del laurel (ej. "Best Short - Manuel, a Piece of Happyness", "Finalist - Mythomania")<input name="title" required value="${esc(editing.title)}"></label>
             <label>Medio / festival / quien lo otorga (ej. "Variety", "Bogoshorts")<input name="outlet" value="${esc(editing.outlet)}"></label>
             <label>Proyecto relacionado (opcional)<select name="project_id"><option value="">— Ninguno —</option>
               ${projects.map((p) => `<option value="${p.id}" ${String(editing.project_id) === String(p.id) ? 'selected' : ''}>${esc(p.title)}</option>`).join('')}</select></label>

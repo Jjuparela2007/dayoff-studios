@@ -1893,10 +1893,16 @@
       const tag = n.url ? 'a' : 'div';
       const attrs = n.url ? ` href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener"` : '';
       const year = (n.published_at || '').slice(0, 4);
+      // "Distinción - Película" → la distinción va arriba en dorado (ej. "Semi Finalist - Mythomania").
+      // Vale guion normal, guion largo o barra, con espacios a los lados (así "Spider-Man" no se parte).
+      // Sin separador: "Winner" (premio) u "Official Selection" (festival).
+      const parts = String(n.title || '').split(/\s+[-—–|]\s+/);
+      const label = parts.length > 1 ? parts.shift() : (n.kind === 'award' ? 'Winner' : 'Official Selection');
+      const title = parts.join(' — ');
       return `<${tag} class="laurel" role="listitem"${attrs}>${laurelSVG()}
         <span class="laurel__txt">
-          <span class="laurel__kind">${n.kind === 'award' ? 'Winner' : 'Official Selection'}</span>
-          <span class="laurel__title">${esc(n.title)}</span>
+          <span class="laurel__kind">${esc(label)}</span>
+          <span class="laurel__title">${esc(title)}</span>
           <span class="laurel__by">${esc([n.outlet, year].filter(Boolean).join(' · '))}</span>
         </span></${tag}>`;
     }).join('');
