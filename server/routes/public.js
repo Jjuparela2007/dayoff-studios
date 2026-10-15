@@ -25,7 +25,7 @@ router.get('/site', asyncH(async (req, res) => {
     query('SELECT * FROM categories ORDER BY sort_order, name'),
     // trailer_url y preview_video (primer video de la galería) → vista previa al pasar el cursor por la obra
     query(`SELECT p.id, p.category_id, p.title, p.slug, p.tagline, p.year, p.genre, p.director, p.poster_url, p.backdrop_url,
-                  p.featured, p.trailer_url,
+                  p.title_logo_url, p.featured, p.trailer_url,
                   (SELECT m.url FROM media m WHERE m.project_id = p.id AND m.type = 'video'
                     ORDER BY m.sort_order, m.id LIMIT 1) AS preview_video
              FROM projects p WHERE p.published = 1

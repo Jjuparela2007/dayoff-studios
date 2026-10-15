@@ -399,6 +399,10 @@ section { position: relative; }
 .pband__line { font-size: clamp(13px, 1vw, 16px); color: rgba(255,255,255,.9); max-width: 60ch; }
 .pband__year { position: absolute; top: clamp(20px, 3vw, 34px); left: clamp(20px, 6vw, 110px); color: rgba(255,255,255,.8); }
 .pband:hover .pband__title { letter-spacing: .02em; }
+/* Título en imagen (logo del título, tipo Netflix) */
+.pband__title--img { display: block; line-height: 0; transform-origin: left bottom; transition: transform .9s var(--ease-out); }
+.pband__title--img img { display: block; width: auto; height: auto; max-width: min(62vw, 620px); max-height: clamp(70px, 17vh, 210px); object-fit: contain; filter: drop-shadow(0 6px 26px rgba(0,0,0,.45)); }
+.pband:hover .pband__title--img { transform: scale(1.03); }
 .pband:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 /* Galería de fotos (categorías tipo Photography): mosaico tipo revista, las fotos conservan su formato */
 .photowall { columns: 3 320px; column-gap: clamp(10px, 1.2vw, 18px); padding: clamp(30px, 5vw, 70px) clamp(12px, 3vw, 48px); }
@@ -755,6 +759,8 @@ a.laurel:hover .laurel__title { color: var(--accent); }
 .d-poster:hover img { transform: scale(1.04); }
 .d-kicker { color: var(--accent); margin: 0 0 14px; }
 .d-title { font: 400 clamp(44px, 8vw, 132px)/.92 var(--f-display); letter-spacing: -.02em; margin: 0; }
+.d-title--img { line-height: 0; margin: 4px 0 10px; }
+.d-title--img img { display: block; width: auto; height: auto; max-width: min(78vw, 720px); max-height: clamp(80px, 22vh, 260px); object-fit: contain; filter: drop-shadow(0 6px 30px rgba(0,0,0,.5)); }
 .d-tagline { font: 400 clamp(18px, 1.8vw, 26px)/1.3 var(--f-display); color: var(--ink-dim); margin: 16px 0 0; }
 @media (max-width: 640px) { .d-hero__content { grid-template-columns: 1fr; } .d-poster { display: none; } }
 

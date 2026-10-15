@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS projects (
   director     VARCHAR(200),
   poster_url   VARCHAR(500),
   backdrop_url VARCHAR(500),
+  title_logo_url VARCHAR(500),
   trailer_url  VARCHAR(500),   -- YouTube, Vimeo o archivo .mp4
   featured     TINYINT(1) DEFAULT 0,
   published    TINYINT(1) DEFAULT 1,

@@ -860,7 +860,9 @@
           <span class="pband__shade" aria-hidden="true"></span>
           <span class="pband__body">
             <span class="pband__logo" aria-hidden="true">${brandMark()}</span>
-            <span class="pband__title">${esc(p.title)}</span>
+            ${safeUrl(p.title_logo_url)
+              ? `<span class="pband__title pband__title--img"><img src="${esc(opt(p.title_logo_url, 960))}" alt="${esc(p.title)}" decoding="async" draggable="false"></span>`
+              : `<span class="pband__title">${esc(p.title)}</span>`}
             <span class="pband__line">${esc(line)}</span>
           </span>
           ${p.year ? `<span class="pband__year mono">${esc(p.year)}</span>` : ''}
@@ -1671,7 +1673,9 @@
           <div class="d-poster"><img src="${esc(opt(p.poster_url, 300))}" data-full="${esc(safeUrl(p.poster_url))}" alt="${esc(p.title)} poster"></div>
           <div>
             <p class="d-kicker mono">${esc(p.category_name || '')}${p.year ? ' · ' + esc(p.year) : ''}</p>
-            <h2 class="d-title" id="detail-title">${esc(p.title)}</h2>
+            ${safeUrl(p.title_logo_url)
+              ? `<h2 class="d-title d-title--img" id="detail-title"><img src="${esc(opt(p.title_logo_url, 1280))}" alt="${esc(p.title)}"></h2>`
+              : `<h2 class="d-title" id="detail-title">${esc(p.title)}</h2>`}
             ${p.tagline ? `<p class="d-tagline">${esc(p.tagline)}</p>` : ''}
           </div>
         </div>
@@ -1757,7 +1761,9 @@
       .from('.d-hero__bg img', { scale: 1.3, duration: 2, ease: 'power3.out' }, 0)
       .from('.d-poster', { clipPath: 'inset(100% 0 0 0)', y: 40, duration: 1.2, ease: 'power4.out' }, .1)
       .from('.d-kicker', { opacity: 0, y: 20, duration: .8 }, .3)
-      .from(words, { yPercent: 110, duration: 1.1, stagger: .05, ease: 'power4.out' }, .3)
+      .from(words.length ? words : '.d-title--img img', words.length
+        ? { yPercent: 110, duration: 1.1, stagger: .05, ease: 'power4.out' }
+        : { opacity: 0, y: 30, filter: 'blur(10px)', duration: 1.2, ease: 'power3.out' }, .3)
       .from('.d-tagline', { opacity: 0, y: 20, duration: .8 }, .7)
       .from('.d-facts > div', { opacity: 0, y: 20, stagger: .08, duration: .7 }, .8);
 

@@ -45,6 +45,9 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Título en imagen de cada proyecto (logo del título tipo Netflix, PNG transparente)
+  const [hasTitleLogo] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'projects' AND COLUMN_NAME = 'title_logo_url'");
+  if (!hasTitleLogo) { await query('ALTER TABLE projects ADD COLUMN title_logo_url VARCHAR(500) NULL AFTER backdrop_url'); console.log('✔ projects.title_logo_url añadido'); }
   // Categorías tipo galería (solo fotos, ej. Photography) y sus fotos
   const [hasGallery] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'is_gallery'");
   if (!hasGallery) { await query('ALTER TABLE categories ADD COLUMN is_gallery TINYINT(1) DEFAULT 0'); console.log('✔ categories.is_gallery añadido'); }

@@ -101,7 +101,7 @@ router.delete('/categories/:id', asyncH(async (req, res) => {
 /* ─────────────── Proyectos ─────────────── */
 
 const PROJECT_FIELDS = ['category_id', 'title', 'slug', 'tagline', 'year', 'duration', 'genre', 'synopsis',
-  'director', 'poster_url', 'backdrop_url', 'trailer_url', 'featured', 'published', 'sort_order'];
+  'director', 'poster_url', 'backdrop_url', 'title_logo_url', 'trailer_url', 'featured', 'published', 'sort_order'];
 
 /* ── Director: un solo dato en dos lugares ──
    El campo "Director/a" de la ficha y el crédito de dirección (pestaña Créditos) se mantienen iguales:

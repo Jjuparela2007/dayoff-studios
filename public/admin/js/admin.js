@@ -768,6 +768,7 @@
         <div class="panel"><h2>Imágenes y tráiler</h2><div class="form-grid">
           ${urlField('poster_url', 'Póster (vertical 2:3, ej. 1000×1500)', p.poster_url)}
           ${urlField('backdrop_url', 'Imagen panorámica (16:9, ej. 1920×1080)', p.backdrop_url)}
+          ${urlField('title_logo_url', 'Título en imagen (opcional) — el nombre de la película como logo, tipo Netflix', p.title_logo_url, 'PNG con fondo transparente, horizontal (ej. 1600×600), con el título en blanco o claro. Reemplaza el texto del título en la franja de la categoría y en la ficha del proyecto. Si lo dejas vacío, se muestra el título en texto.')}
           ${urlField('trailer_url', 'Tráiler', p.trailer_url, 'Pega un enlace de YouTube o Vimeo (recomendado) o elige un .mp4 de la biblioteca.')}
         </div></div>
         <div class="panel"><h2>Publicación</h2><div class="form-grid">
