@@ -1147,3 +1147,20 @@ html[data-theme="light"] .spotlight {
 .lightbox.is-trailer .lightbox__nav, .lightbox.is-trailer .lightbox__count { display: none; }
 .lightbox__trailer { width: min(100%, calc((100vh - 120px) * 16 / 9)); aspect-ratio: 16/9; position: relative; background: #000; }
 .lightbox__trailer iframe, .lightbox__trailer video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ── Menú de correo (computador): Gmail · Outlook · App · Copiar ── */
+.mailmenu {
+  position: fixed; z-index: 1200; min-width: 230px; padding: 8px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5); animation: mailmenu-in .22s var(--ease);
+}
+@keyframes mailmenu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+.mailmenu__to { margin: 6px 10px 8px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mailmenu a, .mailmenu button {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border: 0; border-radius: 9px;
+  background: none; color: var(--ink); font: 500 15px/1 var(--f-text); text-align: left; cursor: pointer; text-decoration: none;
+  transition: background .2s, color .2s;
+}
+.mailmenu a:hover, .mailmenu button:hover, .mailmenu a:focus-visible, .mailmenu button:focus-visible { background: var(--bg-3); color: var(--accent); outline: none; }
+.mailmenu svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.mailmenu a:first-of-type svg { fill: currentColor; stroke: none; }

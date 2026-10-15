@@ -1441,7 +1441,10 @@
      aunque la persona use Gmail en el navegador. En computador, al hacer clic se muestra un menú:
      Gmail · Outlook · App de correo · Copiar email. En celular se abre la app directo (comportamiento normal). */
   function mailMenu() {
-    const desktop = matchMedia('(hover: hover) and (pointer: fine)');
+    // Celular/tablet → app de correo directo. Computador (aunque tenga pantalla táctil) → menú.
+    const isMobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent) && !matchMedia('(any-pointer: fine)').matches);
+    const desktop = { get matches() { return !isMobile(); } };
     let menu = null, opener = null;
     const close = () => {
       if (!menu) return;
@@ -1514,6 +1517,8 @@
       addEventListener('keydown', onKey); addEventListener('scroll', close, true); addEventListener('resize', close);
     }, true);
   }
+
+  try { mailMenu(); } catch (e) { console.error(e); }   // se activa de inmediato, sin esperar a que cargue el contenido
 
   function uiInteractions() {
     // Header: se oculta al bajar, reaparece al subir
@@ -2283,7 +2288,6 @@
     }
     moveInk();
     uiInteractions();
-    mailMenu();
     await preloader.finish((at) => { heroReel.begin(at + .6); heroIntro(at); });   // at+.6 ≈ fin del zoom del logo
     // ScrollTrigger también "recuerda" la posición anterior y la restaura: se le pide que no lo haga
     if (ST) ST.clearScrollMemory('manual');
