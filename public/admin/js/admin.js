@@ -469,10 +469,14 @@
         <div class="panel" id="catphotos" ${+editing.is_gallery ? '' : 'hidden'}>
           <div class="panel__head"><h2>Fotos de la galería <small class="hint" id="catphoto-count"></small></h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="catphotos-section" list="catphoto-sections" placeholder="Sección para las fotos nuevas (opcional)" style="min-width:230px">
               <label class="btn btn--primary btn--sm">Subir fotos<input type="file" id="catphotos-upload" multiple hidden accept="image/jpeg,image/png,image/webp,image/avif"></label>
               <button class="btn btn--ghost btn--sm" id="catphotos-add">+ Desde biblioteca</button></div></div>
           <p class="hint">Puedes elegir muchas fotos a la vez; se guardan solas al subirlas. Arrastra ⋮⋮ para ordenar (las primeras salen arriba).
             JPG o WebP de unos 2000 px por el lado largo; verticales y horizontales se acomodan solas en la galería.</p>
+          <p class="hint"><b>Secciones (opcional):</b> escribe en cada foto su sección, en inglés (ej. Architecture, Landscapes, Portraits). En el sitio las fotos se agrupan por sección, con su título y un menú para saltar entre ellas, en el orden en que aparecen aquí.
+            Para subir varias de una misma sección, escríbela arriba en "Sección para las fotos nuevas" antes de pulsar "Subir fotos". Si no usas secciones, la galería se ve como un solo mosaico.</p>
+          <datalist id="catphoto-sections"></datalist>
           <div class="progress" id="catphotos-progress" hidden><span></span></div>
           <div class="rows" id="catphoto-rows" style="margin-top:14px"></div>
           <div class="savebar"><button class="btn btn--primary" id="catphotos-save">Guardar fotos</button></div>
@@ -500,33 +504,42 @@
     if (box) {
       $('[name=is_gallery]', form).addEventListener('change', (e) => { box.hidden = !e.target.checked; });
       const rows = $('#catphoto-rows');
-      const row = (m = {}) => `<div class="row row--photo" draggable="true">
+      const row = (m = {}) => `<div class="row row--photo row--catphoto" draggable="true">
         <span class="handle" title="Arrastrar">⋮⋮</span>
         <img class="preview" src="${esc(m.url)}" alt="">
         <input data-k="url" placeholder="URL de la foto" value="${esc(m.url)}">
+        <input data-k="section" list="catphoto-sections" placeholder="Sección (ej. Architecture)" value="${esc(m.section)}">
         <input data-k="caption" placeholder="Pie de foto en inglés (opcional)" value="${esc(m.caption)}">
         <button class="btn btn--danger btn--sm" data-remove title="Quitar">×</button>
       </div>`;
+      // Sugerencias de secciones ya usadas (para escribirlas igual en todas las fotos)
+      const sections = () => {
+        const names = [...new Set($$('[data-k=section]', rows).map((i) => i.value.trim()).filter(Boolean))];
+        $('#catphoto-sections').innerHTML = names.map((n) => `<option value="${esc(n)}">`).join('');
+      };
       const count = () => {
+        sections();
         const n = $$('.row', rows).length;
         $('#catphoto-count').textContent = n ? `· ${n}` : '';
         if (!n && !$('.empty', rows)) rows.innerHTML = '<p class="empty">Aún no hay fotos. Pulsa "Subir fotos".</p>';
       };
       const append = (m) => { $('.empty', rows)?.remove(); rows.insertAdjacentHTML('beforeend', row(m)); count(); };
-      const collect = () => $$('.row', rows).map((r) => ({ url: $('[data-k=url]', r).value.trim(), caption: $('[data-k=caption]', r).value.trim() })).filter((m) => m.url);
+      const collect = () => $$('.row', rows).map((r) => ({ url: $('[data-k=url]', r).value.trim(), section: $('[data-k=section]', r).value.trim(), caption: $('[data-k=caption]', r).value.trim() })).filter((m) => m.url);
       const save = (btn, msg = 'Fotos guardadas') => run(btn, () => api(`/api/admin/categories/${editing.id}/photos`, { method: 'PUT', body: collect() }), msg);
       (await api(`/api/admin/categories/${editing.id}/photos`)).forEach(append); count();
-      $('#catphotos-add').addEventListener('click', async () => { const url = await pickMedia(); if (url && !isVideo(url)) append({ url }); });
+      const newSection = () => $('#catphotos-section').value.trim();
+      $('#catphotos-add').addEventListener('click', async () => { const url = await pickMedia(); if (url && !isVideo(url)) append({ url, section: newSection() }); });
       $('#catphotos-upload').addEventListener('change', async (e) => {
         const bar = $('#catphotos-progress'); bar.hidden = false;
         const saved = await run(null, () => uploadFiles(e.target.files, (f) => { bar.firstElementChild.style.width = f * 100 + '%'; }), null);
         bar.hidden = true; bar.firstElementChild.style.width = 0; e.target.value = '';
         if (!saved || !saved.length) return;
-        saved.forEach((f) => append({ url: f.url }));
+        saved.forEach((f) => append({ url: f.url, section: newSection() }));
         save(null, `${saved.length} foto${saved.length > 1 ? 's' : ''} subida${saved.length > 1 ? 's' : ''} y guardada${saved.length > 1 ? 's' : ''}`);
       });
       rows.addEventListener('input', (e) => { if (e.target.dataset.k === 'url') e.target.closest('.row').querySelector('.preview').src = e.target.value; });
       rows.addEventListener('click', (e) => { if (e.target.closest('[data-remove]')) { e.target.closest('.row').remove(); count(); } });
+      rows.addEventListener('change', (e) => { if (e.target.dataset.k === 'section') sections(); });
       enableDragSort(rows);
       $('#catphotos-save').addEventListener('click', (e) => save(e.target));
     }

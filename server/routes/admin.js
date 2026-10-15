@@ -60,14 +60,15 @@ router.get('/categories/:id/photos', asyncH(async (req, res) => {
 }));
 router.put('/categories/:id/photos', asyncH(async (req, res) => {
   const list = (Array.isArray(req.body) ? req.body : [])
-    .map((r) => ({ url: String(r.url || '').trim().slice(0, 500), caption: String(r.caption || '').trim().slice(0, 300) || null }))
+    .map((r) => ({ url: String(r.url || '').trim().slice(0, 500), caption: String(r.caption || '').trim().slice(0, 300) || null,
+      section: String(r.section || '').trim().replace(/\s+/g, ' ').slice(0, 120) || null }))
     .filter((r) => /^(\/uploads\/|\/media\/|https:\/\/)/i.test(r.url)).slice(0, 500);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     await conn.execute('DELETE FROM category_photos WHERE category_id = ?', [req.params.id]);
     for (const [i, r] of list.entries()) {
-      await conn.execute('INSERT INTO category_photos (category_id, url, caption, sort_order) VALUES (?, ?, ?, ?)', [req.params.id, r.url, r.caption, i]);
+      await conn.execute('INSERT INTO category_photos (category_id, url, caption, section, sort_order) VALUES (?, ?, ?, ?, ?)', [req.params.id, r.url, r.caption, r.section, i]);
     }
     await conn.commit();
   } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }

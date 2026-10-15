@@ -59,6 +59,9 @@ const DEMO_REEL = JSON.stringify([1, 2, 3, 4].map((n) => `/media/reel-${n}.mp4`)
     sort_order INT DEFAULT 0,
     CONSTRAINT fk_catphoto_cat FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  // Secciones dentro de una galería (ej. Architecture, Landscapes)
+  const [hasSection] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'category_photos' AND COLUMN_NAME = 'section'");
+  if (!hasSection) { await query('ALTER TABLE category_photos ADD COLUMN section VARCHAR(120) NULL AFTER caption'); console.log('✔ category_photos.section añadido'); }
   // Portada opcional de cada video (si la tabla se creó en la versión anterior, solo con fotos)
   const [hasPoster] = await query("SELECT 1 AS ok FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'studio_photos' AND COLUMN_NAME = 'poster_url'");
   if (!hasPoster) await query('ALTER TABLE studio_photos ADD COLUMN poster_url VARCHAR(500) NULL AFTER url');

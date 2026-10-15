@@ -834,7 +834,7 @@
     if (!cat) return;
     const items = state.projects.filter((p) => p.category_id === cat.id);
     const isGallery = +cat.is_gallery;
-    const photos = (cat.photos || []).map((f) => ({ type: 'image', url: safeUrl(f.url), caption: f.caption })).filter((f) => f.url);
+    const photos = (cat.photos || []).map((f) => ({ type: 'image', url: safeUrl(f.url), caption: f.caption, section: String(f.section || '').trim() })).filter((f) => f.url);
     const site = state.settings.site_name || 'DayOff Studios';
     // Portada: la misma imagen/video de la franja
     const bandMedia = fromEl && $('.cat-band__media', fromEl);
@@ -846,11 +846,43 @@
     state.catPhotos = photos;
     // Galería (Photography…): un mosaico con todas las fotos; clic → visor con zoom
     if (isGallery) {
-      $('.catview__list', catview).innerHTML = `<div class="photowall">${photos.map((f, k) => `
-        <figure class="photowall__item" data-photo="${k}">
-          <img src="${esc(opt(f.url, innerWidth <= 700 ? innerWidth / 2 : innerWidth / 3))}" alt="${esc(f.caption || cat.name)}" loading="lazy" decoding="async" draggable="false">
+      // Secciones (panel → cada foto con su "Sección"): se agrupan en el orden en que aparecen.
+      // Las fotos sin sección van en un grupo sin título. Sin ninguna sección → un solo mosaico, como siempre.
+      const tile = (f) => `
+        <figure class="photowall__item" data-photo="${photos.indexOf(f)}">
+          <img src="${esc(opt(f.url, innerWidth <= 700 ? innerWidth / 2 : innerWidth / 3))}" alt="${esc(f.caption || f.section || cat.name)}" loading="lazy" decoding="async" draggable="false">
           ${f.caption ? `<figcaption>${esc(f.caption)}</figcaption>` : ''}
-        </figure>`).join('')}</div>`;
+        </figure>`;
+      const groups = [];
+      photos.forEach((f) => {
+        const key = f.section.toLowerCase();
+        let g = groups.find((x) => x.key === key);
+        if (!g) groups.push(g = { key, name: f.section, items: [] });
+        g.items.push(f);
+      });
+      const named = groups.filter((g) => g.name);
+      if (!named.length) $('.catview__list', catview).innerHTML = `<div class="photowall">${photos.map(tile).join('')}</div>`;
+      else {
+        const id = (g) => `ps-${slugify(g.name) || groups.indexOf(g)}`;
+        $('.catview__list', catview).innerHTML = `
+          ${named.length > 1 ? `<nav class="photosecs" aria-label="Gallery sections">${named.map((g) =>
+            `<a href="#${id(g)}" data-sec="${id(g)}">${esc(g.name)}<sup>${g.items.length}</sup></a>`).join('')}</nav>` : ''}
+          ${groups.map((g) => `
+            <section class="photosec" ${g.name ? `id="${id(g)}"` : ''}>
+              ${g.name ? `<header class="photosec__head"><h3 class="photosec__title">${esc(g.name)}</h3>
+                <span class="photosec__count mono">${g.items.length} ${g.items.length === 1 ? 'photo' : 'photos'}</span></header>` : ''}
+              <div class="photowall">${g.items.map(tile).join('')}</div>
+            </section>`).join('')}`;
+        // Menú de secciones: marca la sección que se está viendo
+        const links = $$('.photosecs a', catview);
+        if (links.length && 'IntersectionObserver' in window) {
+          if (state.secIO) state.secIO.disconnect();
+          state.secIO = new IntersectionObserver((ents) => ents.forEach((en) => {
+            if (en.isIntersecting) links.forEach((a) => a.classList.toggle('is-active', a.dataset.sec === en.target.id));
+          }), { root: cvScroll, rootMargin: '-35% 0px -60% 0px' });
+          $$('.photosec[id]', catview).forEach((x) => state.secIO.observe(x));
+        }
+      }
     } else $('.catview__list', catview).innerHTML = items.map((p, k) => {
       const poster = safeUrl(p.backdrop_url) || safeUrl(p.poster_url);
       const vid = safeUrl(p.preview_video) || safeUrl(p.trailer_url);
@@ -951,6 +983,14 @@
   }
   if (catview) {
     $('.catview__list', catview).addEventListener('click', (e) => {
+      const sec = e.target.closest('[data-sec]');
+      if (sec) {
+        e.preventDefault();
+        const target = document.getElementById(sec.dataset.sec);
+        const nav = $('.photosecs', catview);
+        if (target) cvScroll.scrollTo({ top: cvScroll.scrollTop + target.getBoundingClientRect().top - (nav ? nav.offsetHeight : 0) - 10, behavior: REDUCED ? 'auto' : 'smooth' });
+        return;
+      }
       const f = e.target.closest('[data-photo]');
       if (!f) return;
       gallery = state.catPhotos || [];

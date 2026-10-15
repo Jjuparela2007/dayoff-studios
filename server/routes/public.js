@@ -63,8 +63,8 @@ router.get('/site', asyncH(async (req, res) => {
   const galleryCats = categories.filter((c) => +c.is_gallery);
   if (galleryCats.length) {
     const ids = galleryCats.map((c) => c.id);
-    const rows = await query(`SELECT category_id, url, caption FROM category_photos WHERE category_id IN (${ids.map(() => '?').join(',')}) ORDER BY sort_order, id`, ids).catch(() => []);
-    galleryCats.forEach((c) => { c.photos = rows.filter((r) => r.category_id === c.id).map(({ url, caption }) => ({ url, caption })); });
+    const rows = await query(`SELECT category_id, url, caption, section FROM category_photos WHERE category_id IN (${ids.map(() => '?').join(',')}) ORDER BY sort_order, id`, ids).catch(() => []);
+    galleryCats.forEach((c) => { c.photos = rows.filter((r) => r.category_id === c.id).map(({ url, caption, section }) => ({ url, caption, section })); });
   }
 
   // Galería del estudio ("On set"): videos publicados, en el orden del panel

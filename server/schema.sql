@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS category_photos (
   category_id INT UNSIGNED NOT NULL,
   url         VARCHAR(500) NOT NULL,
   caption     VARCHAR(300),
+  section     VARCHAR(120),
   sort_order  INT DEFAULT 0,
   CONSTRAINT fk_catphoto_cat FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
